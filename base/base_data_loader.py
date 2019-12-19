@@ -27,6 +27,8 @@ class BaseDataLoader(DataLoader):
         super().__init__(sampler=self.sampler, **self.init_kwargs)
 
     def _split_sampler(self, split):
+        # TODO: need to add split as tuple which indicates
+        # TODO: need to add x fold cross validation sampler.
         if split == 0.0:
             return None, None
 

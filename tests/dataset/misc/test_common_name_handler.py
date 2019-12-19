@@ -1,4 +1,4 @@
-from dataset.misc.common_name_handler import CommonNameHandler
+from preprocess.misc.common_name_handler import CommonNameHandler
 
 
 class TestCommonNameHanlder:

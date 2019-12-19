@@ -1,6 +1,8 @@
-import torch
 from abc import abstractmethod
+
+import torch
 from numpy import inf
+
 from logger import TensorboardWriter
 
 
@@ -8,6 +10,7 @@ class BaseTrainer:
     """
     Base class for all trainers
     """
+
     def __init__(self, model, criterion, metric_ftns, optimizer, config):
         self.config = config
         self.logger = config.get_logger('trainer', config['trainer']['verbosity'])
@@ -105,6 +108,7 @@ class BaseTrainer:
         """
         setup GPU device if available, move model into configured device
         """
+        # TODO: Need to specify gpu id in used.
         n_gpu = torch.cuda.device_count()
         if n_gpu_use > 0 and n_gpu == 0:
             self.logger.warning("Warning: There\'s no GPU available on this machine,"
@@ -159,6 +163,7 @@ class BaseTrainer:
         if checkpoint['config']['arch'] != self.config['arch']:
             self.logger.warning("Warning: Architecture configuration given in config file is different from that of "
                                 "checkpoint. This may yield an exception while state_dict is being loaded.")
+        # TODO: Need to verify if the model need call resume rather than load_state_dict, because the GAN Network is very special.
         self.model.load_state_dict(checkpoint['state_dict'])
 
         # load optimizer state from checkpoint only when optimizer type is not changed.

@@ -1,6 +1,6 @@
 import os
 
-from dataset.misc.nifti_parser import NiftiParser
+from preprocess.misc.nifti_parser import NiftiParser
 
 
 class TestNiftiParser:

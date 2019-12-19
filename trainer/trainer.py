@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 from torchvision.utils import make_grid
+
 from base import BaseTrainer
 from utils import inf_loop, MetricTracker
 
@@ -9,6 +10,7 @@ class Trainer(BaseTrainer):
     """
     Trainer class
     """
+
     def __init__(self, model, criterion, metric_ftns, optimizer, config, data_loader,
                  valid_data_loader=None, lr_scheduler=None, len_epoch=None):
         super().__init__(model, criterion, metric_ftns, optimizer, config)
@@ -38,12 +40,16 @@ class Trainer(BaseTrainer):
         """
         self.model.train()
         self.train_metrics.reset()
-        for batch_idx, (data, target) in enumerate(self.data_loader):
+        for batch_idx, (data, target, img_name) in enumerate(self.data_loader):
             data, target = data.to(self.device), target.to(self.device)
 
             self.optimizer.zero_grad()
             output = self.model(data)
-            loss = self.criterion(output, target)
+            loss = self.criterion[0](output, target)
+            if len(self.criterion) > 1:
+                for idx in range(1, len(self.criterion)):
+                    loss += self.criterion[idx](output, target)
+            # loss = self.criterion(output, target)
             loss.backward()
             self.optimizer.step()
 
@@ -65,7 +71,7 @@ class Trainer(BaseTrainer):
 
         if self.do_validation:
             val_log = self._valid_epoch(epoch)
-            log.update(**{'val_'+k : v for k, v in val_log.items()})
+            log.update(**{'val_' + k: v for k, v in val_log.items()})
 
         if self.lr_scheduler is not None:
             self.lr_scheduler.step()
@@ -85,7 +91,11 @@ class Trainer(BaseTrainer):
                 data, target = data.to(self.device), target.to(self.device)
 
                 output = self.model(data)
-                loss = self.criterion(output, target)
+
+                loss = self.criterion[0](output, target)
+                if len(self.criterion) > 1:
+                    for idx in range(1, len(self.criterion)):
+                        loss += self.criterion[idx](output, target)
 
                 self.writer.set_step((epoch - 1) * len(self.valid_data_loader) + batch_idx, 'valid')
                 self.valid_metrics.update('loss', loss.item())

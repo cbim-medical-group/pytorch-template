@@ -1,9 +1,13 @@
+import importlib
 import os
 import logging
 from pathlib import Path
 from functools import reduce, partial
 from operator import getitem
 from datetime import datetime
+
+import stringcase
+
 from logger import setup_logging
 from utils import read_json, write_json
 
@@ -77,7 +81,7 @@ class ConfigParser:
         modification = {opt.target : getattr(args, _get_opt_name(opt.flags)) for opt in options}
         return cls(config, resume, modification)
 
-    def init_obj(self, name, module, *args, **kwargs):
+    def init_obj(self, name, module=None, *args, **kwargs):
         """
         Finds a function handle with the name given as 'type' in config, and returns the
         instance initialized with corresponding arguments given.
@@ -87,12 +91,20 @@ class ConfigParser:
         `object = module.name(a, b=1)`
         """
         module_name = self[name]['type']
-        module_args = dict(self[name]['args'])
+        if ("args" not in self[name]) or (not self[name]['args']):
+            module_args = dict({})
+        else:
+            module_args = dict(self[name]['args'])
         assert all([k not in module_args for k in kwargs]), 'Overwriting kwargs given in config file is not allowed'
         module_args.update(kwargs)
+
+        if not module:
+            #If module is None, try to use the snakecase's module_name as module.
+            module = importlib.import_module(f"{name}.{stringcase.snakecase(module_name)}")
+
         return getattr(module, module_name)(*args, **module_args)
 
-    def init_ftn(self, name, module, *args, **kwargs):
+    def init_ftn(self, name, module=None, *args, **kwargs):
         """
         Finds a function handle with the name given as 'type' in config, and returns the
         function with given arguments fixed with functools.partial.
@@ -101,11 +113,25 @@ class ConfigParser:
         is equivalent to
         `function = lambda *args, **kwargs: module.name(a, *args, b=1, **kwargs)`.
         """
-        module_name = self[name]['type']
-        module_args = dict(self[name]['args'])
-        assert all([k not in module_args for k in kwargs]), 'Overwriting kwargs given in config file is not allowed'
-        module_args.update(kwargs)
-        return partial(getattr(module, module_name), *args, **module_args)
+        module_names = self[name]
+        ftns = []
+        for module_name in module_names:
+            if not module:
+                module_one = importlib.import_module(f"{name}.{module_name}")
+            ftns.append(partial(getattr(module_one, module_name), *args, **kwargs))
+        return ftns
+
+        # if not self[name]['args']:
+        #     module_args = dict({})
+        # else:
+        #     module_args = dict(self[name]['args'])
+        # assert all([k not in module_args for k in kwargs]), 'Overwriting kwargs given in config file is not allowed'
+        # module_args.update(kwargs)
+        # if not module:
+        #     module = importlib.import_module(f"{name}.{module_name}")
+        #
+        # return partial(getattr(module, module_name), *args, **module_args)
+
 
     def __getitem__(self, name):
         """Access items like ordinary dict."""
