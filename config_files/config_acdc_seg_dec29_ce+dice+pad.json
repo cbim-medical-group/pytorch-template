@@ -1,24 +1,26 @@
 {
-    "name": "Mnist_LeNet_Resume",
+    "name": "ACDC_Segmentation_crossentropy+dice+padding_224",
     "n_gpu": 1,
 
     "model": {
-        "type": "MnistModel",
-        "args": {}
+        "type": "Unet",
+        "args": {
+            "in_channel" : 1,
+            "out_channel": 4
+        }
     },
     "data_loader": {
-        "type": "MnistDataLoader",
+        "type": "AcdcDataLoader",
         "args":{
-            "data_dir": "data/",
-            "batch_size": 128,
+            "data_root": "db/",
+            "batch_size": 16,
             "shuffle": true,
-            "validation_split": 0.1,
-            "num_workers": 2
+            "validation_split": 0.2,
+            "num_workers": 0
         },
-        "transforms": ["RandomFlip","Scale","RandomCrop","ToTensor","Normalize"],
+        "transforms": ["Padding","RandomCrop","ToTensor","NormalizeInstance"],
         "transforms_args": {
-            "Normalize": [67.78, 62.8],
-            "Scale": [256],
+            "Padding": [224],
             "RandomCrop": [224]
         }
     },
@@ -30,8 +32,8 @@
             "amsgrad": true
         }
     },
-    "loss": ["nll_loss"],
-    "metric": ["accuracy", "top_k_acc"],
+    "loss": ["cross_entropy_loss","tversky_loss"],
+    "metric": ["accuracy", "dice", "dice_cat1", "dice_cat2", "dice_cat3"],
     "lr_scheduler": {
         "type": "StepLR",
         "args": {
@@ -40,7 +42,7 @@
         }
     },
     "trainer": {
-        "epochs": 100,
+        "epochs": 200,
 
         "save_dir": "saved/",
         "save_period": 1,

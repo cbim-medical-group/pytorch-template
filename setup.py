@@ -34,6 +34,10 @@ setup(
         'parse==1.12.1',
         'stringcase==1.2.0',
         'pyunpack==0.1.2',
-        'patool==1.12'
+        'patool==1.12',
+        'tensorboard>=1.14.0',
+        'scikit-learn==0.22',
+        'imbalanced-learn==0.6.1',
+        'opencv-python==4.1.2.30'
     ]
 )

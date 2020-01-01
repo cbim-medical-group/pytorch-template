@@ -1,10 +1,9 @@
 import argparse
 import torch
+import importlib
 from tqdm import tqdm
 import data_loader.data_loaders as module_data
-import model.loss as module_loss
-import model.metric as module_metric
-import model.model as module_arch
+
 from parse_config import ConfigParser
 
 
@@ -22,12 +21,12 @@ def main(config):
     )
 
     # build model architecture
-    model = config.init_obj('arch', module_arch)
+    model = config.init_obj('model')
     logger.info(model)
 
     # get function handles of loss and metrics
-    loss_fn = getattr(module_loss, config['loss'])
-    metric_fns = [getattr(module_metric, met) for met in config['metrics']]
+    criterion = config.init_ftn('loss')
+    metric_fns = [getattr(importlib.import_module(f"metric.{met}"), met) for met in config['metric']]
 
     logger.info('Loading checkpoint: {} ...'.format(config.resume))
     checkpoint = torch.load(config.resume)
@@ -54,7 +53,12 @@ def main(config):
             #
 
             # computing loss, metrics on test set
-            loss = loss_fn(output, target)
+
+            loss = criterion[0](output, target)
+            if len(criterion) > 1:
+                for idx in range(1, len(criterion)):
+                    loss += criterion[idx](output, target)
+
             batch_size = data.shape[0]
             total_loss += loss.item() * batch_size
             for i, metric in enumerate(metric_fns):

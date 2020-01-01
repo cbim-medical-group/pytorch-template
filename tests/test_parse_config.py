@@ -112,3 +112,13 @@ class TestParseConfig:
 
             for ftn in ftns:
                 assert ftn() == "param1"
+
+    def test_init_transform(self, mocker):
+        args = self.args
+        self.setup_mocker(mocker)
+        with mocker.patch.object(args, "parse_args", return_value=dict2obj(
+                {"device": None, "resume": "tests/config.json", "config": None})):
+            config = ConfigParser.from_args(args)
+            mytransfm = config.init_transform()
+
+            assert len(mytransfm.transforms) == 5

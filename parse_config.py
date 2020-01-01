@@ -8,6 +8,7 @@ from datetime import datetime
 
 import stringcase
 
+from data_loader.my_transforms.compose import Compose
 from logger import setup_logging
 from utils import read_json, write_json
 
@@ -132,6 +133,24 @@ class ConfigParser:
         #
         # return partial(getattr(module, module_name), *args, **module_args)
 
+    def init_transform(self, *args, **kwargs):
+        if 'transforms' not in self['data_loader']:
+            return False
+        transforms = self['data_loader']['transforms']
+        transforms_args = self['data_loader']['transforms_args']
+        transform_instances = []
+        for module_name in transforms:
+            transform = importlib.import_module(f"data_loader.my_transforms.{stringcase.snakecase(module_name)}")
+            if module_name in transforms_args:
+                transform_arg = transforms_args[module_name]
+            else:
+                transform_arg = []
+
+            instance = getattr(transform, module_name)(*transform_arg)
+            transform_instances.append(instance)
+
+        compose = Compose(transform_instances)
+        return compose
 
     def __getitem__(self, name):
         """Access items like ordinary dict."""

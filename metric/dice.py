@@ -2,22 +2,22 @@ import numpy as np
 import torch
 
 
-def one_cls_dice(output, target, channel_idx):
+def one_cls_dice(output, target, label_idx):
     """
     Calculate Dice metrics for one channel
     :param output:Output dimension: Batch x Channel x X x Y (x Z) float
     :param target:Target dimension: Batch x X x Y (x Z) int:[0, Channel]
-    :param channel_idx:
+    :param label_idx:
     :return:
     """
     eps = 0.0001
     with torch.no_grad():
         pred = torch.argmax(output, 1)
-        pred_bool = (pred == channel_idx)
-        target_bool = (target == channel_idx)
+        pred_bool = (pred == label_idx)
+        target_bool = (target == label_idx)
 
         intersection = pred_bool * target_bool
-        return 2 * int(intersection.sum()) / (int(pred_bool.sum()) + int(target_bool.sum()) + eps)
+        return (2 * int(intersection.sum())) / (int(pred_bool.sum()) + int(target_bool.sum()) + eps)
 
 
 def dice(output, target):
@@ -28,10 +28,10 @@ def dice(output, target):
     :return:
     """
     channel_num = output.shape[1]
-    assert 1 < channel_num <= (target.max()+1)  # At least should have 1 foreground channel, and should have less than the target max.
+    # assert 1 < channel_num <= (target.max()+1)  # At least should have 1 foreground channel, and should have less than the target max.
     dices = []
     for i in range(1, channel_num):
-        dice = one_cls_dice(output, target, channel_idx=i)
+        dice = one_cls_dice(output, target, label_idx=i)
         dices.append(dice)
 
     return np.average(np.array(dices))

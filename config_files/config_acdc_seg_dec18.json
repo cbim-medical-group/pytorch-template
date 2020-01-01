@@ -5,7 +5,7 @@
     "model": {
         "type": "Unet",
         "args": {
-            "in_channel" : 3,
+            "in_channel" : 1,
             "out_channel": 4
         }
     },
@@ -17,6 +17,12 @@
             "shuffle": true,
             "validation_split": 0.2,
             "num_workers": 0
+        },
+        "transforms": ["Scale","RandomCrop","ToTensor","Normalize"],
+        "transforms_args": {
+            "Scale": [256],
+            "RandomCrop": [224],
+            "Normalize": [67.78, 62.8]
         }
     },
     "optimizer": {
@@ -27,8 +33,8 @@
             "amsgrad": true
         }
     },
-    "loss": ["cross_entropy_loss"],
-    "metric": ["accuracy"],
+    "loss": ["cross_entropy_loss","tversky_loss"],
+    "metric": ["accuracy", "dice", "dice_cat1", "dice_cat2", "dice_cat3"],
     "lr_scheduler": {
         "type": "StepLR",
         "args": {

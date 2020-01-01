@@ -93,7 +93,7 @@ class NiftiParser:
                 pixdim = nifti_file.header.get('pixdim')
                 dim = nifti_file.header.get('dim')
 
-                ds = current_file.create_dataset(f"{d_type}/{folder}/{file_name}", data=array_file)
+                ds = current_file.create_dataset(f"{d_type}/{file_name}", data=array_file)
                 ds.attrs["x_spacing"] = pixdim[1]
                 ds.attrs["y_spacing"] = pixdim[2]
                 ds.attrs["z_spacing"] = pixdim[3]
