@@ -1,0 +1,57 @@
+{
+    "name": "ACDC_MICCAI_SAX_ce+dice+padding_224",
+    "n_gpu": 1,
+
+    "model": {
+        "type": "ResUnet34",
+        "args": {
+            "in_channel" : 5,
+            "out_channel": 4,
+            "pretrained": false
+        }
+    },
+    "data_loader": {
+        "type": "AcdcMiccaiDataLoader",
+        "args":{
+            "data_root": "db/",
+            "batch_size": 16,
+            "shuffle": true,
+            "validation_split": 0.2,
+            "num_workers": 0
+        },
+        "transforms": ["Padding","RandomCrop","ToTensor","NormalizeInstance"],
+        "transforms_args": {
+            "Padding": [256],
+            "RandomCrop": [224]
+        }
+    },
+    "optimizer": {
+        "type": "Adam",
+        "args":{
+            "lr": 0.001,
+            "weight_decay": 0,
+            "amsgrad": true
+        }
+    },
+    "loss": ["cross_entropy_loss","tversky_loss"],
+    "metric": ["accuracy", "dice", "dice_cat1", "dice_cat2", "dice_cat3"],
+    "lr_scheduler": {
+        "type": "StepLR",
+        "args": {
+            "step_size": 50,
+            "gamma": 0.1
+        }
+    },
+    "trainer": {
+        "epochs": 200,
+
+        "save_dir": "saved/",
+        "save_period": 1,
+        "verbosity": 2,
+        
+        "monitor": "min val_loss",
+        "early_stop": 10,
+
+        "tensorboard": true
+    }
+}

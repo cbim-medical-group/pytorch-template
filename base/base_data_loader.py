@@ -61,6 +61,3 @@ class BaseDataLoader(DataLoader):
             return None
         else:
             return DataLoader(sampler=self.valid_sampler, **self.init_kwargs)
-
-    def get_my_transforms(self):
-        pass

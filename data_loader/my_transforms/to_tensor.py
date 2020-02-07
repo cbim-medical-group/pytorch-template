@@ -1,6 +1,4 @@
-import numpy as np
 import torch
-from skimage.transform import resize
 
 
 class ToTensor:
@@ -15,5 +13,8 @@ class ToTensor:
 
         image = torch.tensor(image).float()
         mask = torch.tensor(mask).long()
+
+        if len(image.shape) == 2:
+            image.unsqueeze_(0)
 
         return {'image': image, 'mask': mask}

@@ -1,11 +1,10 @@
 from base import BaseDataLoader
-from dataset.acdc_dataset import ACDC_dataset
-from dataset.acdc_test_dataset import AcdcTestDataset
+from dataset.acdc_miccai_dataset import AcdcMiccaiTrainDataset
 
 
-class AcdcDataLoader(BaseDataLoader):
+class AcdcMiccaiDataLoader(BaseDataLoader):
     def __init__(self, data_root, batch_size, shuffle=True, validation_split=0.0, num_workers=1, training=True,
-                 transforms=None):
+                 transforms=None, type="sax_15p"):
         # if training:
         #     trsfm = my_transforms.Compose([
         #         # my_transforms.RandomHorizontalFlip(),
@@ -23,9 +22,6 @@ class AcdcDataLoader(BaseDataLoader):
         #         ]
         #     )
         if training:
-            self.dataset = ACDC_dataset(data_root, training, transform=transforms)
-        else:
-            # self.dataset = ACDC_dataset(data_root, training, transform=transforms)
-            self.dataset = AcdcTestDataset(data_root, training, transform=transforms)
+            self.dataset = AcdcMiccaiTrainDataset(data_root, type=type, transform=transforms)
 
         super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers)

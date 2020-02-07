@@ -1,3 +1,4 @@
+import numpy as np
 import random
 
 
@@ -22,9 +23,16 @@ class RandomFlip:
             # If testing, will not flip.
             return {'image': image, 'mask': mask}
 
+        if len(image.shape) == 2:
+            image = np.expand_dims(image, 0)
+
         if self.horizontal and random.random() < 0.5:
-            image, mask = image[:, :, ::-1], mask[:, ::-1]
+            image = image[:, :, ::-1].copy()
+            if len(mask.shape) == 2:
+                mask = mask[:, ::-1].copy()
         if self.vertical and random.random() < 0.5:
-            image, mask = image[:, ::-1, :], mask[:, :-1, :]
+            image = image[:, ::-1, :].copy()
+            if len(mask.shape) == 2:
+                mask = mask[::-1, :].copy()
 
         return {'image': image, 'mask': mask}

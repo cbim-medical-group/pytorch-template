@@ -11,11 +11,12 @@ class MnistDataLoader(BaseDataLoader):
     """
 
     def __init__(self, data_dir, batch_size, shuffle=True, validation_split=0.0, num_workers=1, training=True,
-                 synthetic_db=False, cls_filter=None):
-        trsfm = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.1307,), (0.3081,))
-        ])
+                 synthetic_db=False, cls_filter=None, transforms = None):
+        trsfm = transforms
+        # trsfm = transforms.Compose([
+        #     transforms.ToTensor(),
+        #     transforms.Normalize((0.1307,), (0.3081,))
+        # ])
         self.data_dir = data_dir
         if not synthetic_db:
             self.dataset = MnistSplitDataset(self.data_dir, train=training, download=True, transform=trsfm,

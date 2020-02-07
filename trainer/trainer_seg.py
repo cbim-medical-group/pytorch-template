@@ -1,12 +1,14 @@
 import numpy as np
 import torch
+import torchvision
 from torchvision.utils import make_grid
+import torch.nn.functional as F
 
 from base import BaseTrainer
 from utils import inf_loop, MetricTracker
 
 
-class Trainer(BaseTrainer):
+class SegTrainer(BaseTrainer):
     """
     Trainer class
     """
@@ -24,12 +26,18 @@ class Trainer(BaseTrainer):
             self.data_loader = inf_loop(data_loader)
             self.len_epoch = len_epoch
         self.valid_data_loader = valid_data_loader
-        self.do_validation = self.valid_data_loader is not None
+        self.do_validation = True
         self.lr_scheduler = lr_scheduler
-        self.log_step = int(np.sqrt(data_loader.batch_size))
+        # self.log_step = int(np.sqrt(data_loader.batch_size))
+        self.log_step = int(len(data_loader) / 10)
 
-        self.train_metrics = MetricTracker('loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
-        self.valid_metrics = MetricTracker('loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
+        metric_names = [met.__name__ for met in metric_ftns]
+        metric_names.append('loss')
+        self.train_metrics = MetricTracker(*metric_names, writer=self.writer)
+        self.valid_metrics = MetricTracker(*metric_names, writer=self.writer)
+
+        # if config.resume is None:
+        #     self.model.initialize()
 
     def _train_epoch(self, epoch):
         """
@@ -40,32 +48,35 @@ class Trainer(BaseTrainer):
         """
         self.model.train()
         self.train_metrics.reset()
-        for batch_idx, (data, target) in enumerate(self.data_loader):
+        for batch_idx, (data, target, img_name) in enumerate(self.data_loader):
             data, target = data.to(self.device), target.to(self.device)
+            if target.max() == 255:
+                target /= 255
+            # from utils.util import show_figures
+            # for i in range(data.size(0)):
+            #     show_figures((data[i][0].cpu().numpy(), target[i][0].cpu().numpy()))
+
+            data = data.cuda().detach()
 
             self.optimizer.zero_grad()
             output = self.model(data)
-            loss = self.criterion[0](output, target)
-            if len(self.criterion) > 1:
-                for idx in range(1, len(self.criterion)):
-                    loss += self.criterion[idx](output, target)
-            # loss = self.criterion(output, target)
+            loss = self.criterion(torch.sigmoid(output), target.float())
             loss.backward()
-            self.optimizer.step()
+            self.optimizer.opt.step()
 
             self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
-            self.train_metrics.update('loss', loss.item())
+
+            self.train_metrics.update('loss', loss)
             for met in self.metric_ftns:
-                self.train_metrics.update(met.__name__, met(output, target))
+                self.train_metrics.update(met.__name__, met(output, target), output.size(0))
 
             if batch_idx % self.log_step == 0:
-                self.logger.debug('Train Epoch: {} {} Loss: {:.6f}'.format(
-                    epoch,
-                    self._progress(batch_idx),
-                    loss.item()))
-                if data.shape[1] != 3 and data.shape[1] != 1:
-                    vis_data = data[:, 2:3, :, :]
-                self.writer.add_image('input', make_grid(vis_data.cpu(), nrow=8, normalize=True))
+                message = 'Train Epoch: {} {} Loss: {:.4f}'.format(epoch, self._progress(batch_idx), loss)
+                results = self.train_metrics.result()
+                for met in self.metric_ftns:
+                    met_name = met.__name__
+                    message += '\t{:s}: {:.4f}'.format(met_name, results[met_name])
+                self.logger.debug(message)
 
             if batch_idx == self.len_epoch:
                 break
@@ -75,8 +86,8 @@ class Trainer(BaseTrainer):
             val_log = self._valid_epoch(epoch)
             log.update(**{'val_' + k: v for k, v in val_log.items()})
 
-        if self.lr_scheduler is not None:
-            self.lr_scheduler.step()
+        # if self.lr_scheduler is not None:
+        #     self.lr_scheduler.step(epoch)
         return log
 
     def _valid_epoch(self, epoch):
@@ -89,28 +100,18 @@ class Trainer(BaseTrainer):
         self.model.eval()
         self.valid_metrics.reset()
         with torch.no_grad():
-            for batch_idx, (data, target) in enumerate(self.valid_data_loader):
+            for batch_idx, (data, target, img_name) in enumerate(self.valid_data_loader):
                 data, target = data.to(self.device), target.to(self.device)
-
+                if target.max() == 255:
+                    target /= 255
                 output = self.model(data)
-
-                loss = self.criterion[0](output, target)
-                if len(self.criterion) > 1:
-                    for idx in range(1, len(self.criterion)):
-                        loss += self.criterion[idx](output, target)
+                loss = self.criterion(torch.sigmoid(output), target.float())
 
                 self.writer.set_step((epoch - 1) * len(self.valid_data_loader) + batch_idx, 'valid')
                 self.valid_metrics.update('loss', loss.item())
                 for met in self.metric_ftns:
-                    self.valid_metrics.update(met.__name__, met(output, target))
+                    self.valid_metrics.update(met.__name__, met(output, target), output.size(0))
 
-                if data.shape[1] != 3 and data.shape[1] != 1:
-                    vis_data = data[:, 2:3, :, :]
-                self.writer.add_image('input', make_grid(vis_data.cpu(), nrow=8, normalize=True))
-
-        # add histogram of model parameters to the tensorboard
-        for name, p in self.model.named_parameters():
-            self.writer.add_histogram(name, p, bins='auto')
         return self.valid_metrics.result()
 
     def _progress(self, batch_idx):

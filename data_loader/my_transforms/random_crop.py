@@ -6,13 +6,19 @@ class RandomCrop:
     Crop the 2D numpy [c, h, w] and mask [h, w] in a sample
     """
 
-    def __init__(self, output_size, training=True):
-        assert isinstance(output_size, (int, tuple))
+    def __init__(self, output_size, padding=0, training=True):
+        assert isinstance(output_size, (int, list))
         if isinstance(output_size, int):
             self.output_size = (output_size, output_size)
         else:
             assert len(output_size) == 2
-            self.output_size = output_size
+            self.output_size = tuple(output_size)
+
+        if isinstance(padding, int):
+            self.padding = (padding, padding)
+        else:
+            assert len(padding) == 2
+            self.padding = tuple(padding)
 
         self.training = training
 
@@ -34,6 +40,11 @@ class RandomCrop:
             left = np.random.randint(w - new_w + 1)
 
         image = image[:, top: top + new_h, left: left + new_w]
-        mask = mask[top: top + new_h, left: left + new_w]
+        if len(mask.shape) == 2:
+            mask = mask[top: top + new_h, left: left + new_w]
+
+        if self.padding != (0, 0):
+            mask = mask[self.padding[0]:(mask.shape[0] - self.padding[0]),
+                   self.padding[1]:(mask.shape[1] - self.padding[1])]
 
         return {'image': image, 'mask': mask}
