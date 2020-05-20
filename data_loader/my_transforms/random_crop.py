@@ -23,7 +23,7 @@ class RandomCrop:
         self.training = training
 
     def __call__(self, sample):
-        image, mask = sample['image'], sample['mask']
+        image, mask, misc = sample['image'], sample['mask'], sample['misc']
 
         c, h, w = image.shape
         new_h, new_w = self.output_size
@@ -47,4 +47,4 @@ class RandomCrop:
             mask = mask[self.padding[0]:(mask.shape[0] - self.padding[0]),
                    self.padding[1]:(mask.shape[1] - self.padding[1])]
 
-        return {'image': image, 'mask': mask}
+        return {'image': image, 'mask': mask, 'misc': misc}

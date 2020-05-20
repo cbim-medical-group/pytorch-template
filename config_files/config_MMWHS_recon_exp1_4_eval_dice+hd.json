@@ -1,0 +1,76 @@
+{
+    "name": "MMWHS_recon_exp1+dice+zoom_eval_dice+hd_mar9",
+    "n_gpu": 1,
+
+    "model": {
+        "type": "Unet3d",
+        "args": {
+            "in_channel" : 1,
+            "out_channel": 2
+        }
+    },
+    "data_loader": {
+        "type": "GeneralDataLoader",
+        "args":{
+            "data_dir": "/share_hd1/db/MRRecon/MMWHS_training.h5",
+            "batch_size": 2,
+            "shuffle": true,
+            "validation_split": 0.2,
+            "num_workers": 0
+        },
+        "transforms": ["FilterLabel","RandomSample","Zoom3d","Padding3d", "RandomCrop3d","ToTensor","Normalize3d"],
+        "transforms_args": {
+            "Zoom3d": [0.5],
+            "FilterLabel": [[2],[1]],
+            "Padding3d": [108],
+            "RandomCrop3d": [96],
+            "Normalize3d": [0.5,0.5]
+        }
+    },
+    "test_data_loader": {
+        "type": "GeneralDataLoader",
+        "args":{
+            "data_dir": "/share_hd1/db/MRRecon/ACDC_train_disease_split.h5",
+            "batch_size": 1,
+            "shuffle": false,
+            "validation_split": [["RV"],["RV"]],
+            "num_workers": 0
+        },
+        "transforms": ["FilterLabel","Zoom3d","ZUpsampler","Unsqueeze","Padding3d", "ToTensor","Normalize3d"],
+        "transforms_args": {
+            "Zoom3d": [[0.5,0.5,1]],
+            "FilterLabel": [[2],[1]],
+            "Padding3d": [96],
+            "Normalize3d": [0.5,0.5]
+        }
+    },
+    "optimizer": {
+        "type": "Adam",
+        "args":{
+            "lr": 0.001,
+            "weight_decay": 0,
+            "amsgrad": true
+        }
+    },
+    "loss": ["cross_entropy_loss","dice_lossv3"],
+    "metric": ["dice_sparse2d","hd_sparse2d"],
+    "lr_scheduler": {
+        "type": "StepLR",
+        "args": {
+            "step_size": 50,
+            "gamma": 0.1
+        }
+    },
+    "trainer": {
+        "epochs": 200,
+
+        "save_dir": "saved/",
+        "save_period": 1,
+        "verbosity": 2,
+
+        "monitor": "min val_loss",
+        "early_stop": 40,
+        "tensorboard": true,
+        "vis": false
+    }
+}

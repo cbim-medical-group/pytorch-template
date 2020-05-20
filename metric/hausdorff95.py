@@ -6,7 +6,9 @@ import numpy as np
 def hausdorff95(output, target):
     with torch.no_grad():
         # pred = torch.sigmoid(output) > 0.5
-        pred = output > 0.5
+        # pred = output > 0.5
+        pred = torch.argmax(output, 1)
+        pred = (pred == 1)
         assert pred.size() == target.size()
 
         pred = pred.detach().cpu().numpy()
@@ -21,7 +23,8 @@ def hausdorff95(output, target):
                 pred_ind = np.argwhere(pred_contours)
                 target_ind = np.argwhere(target_contours)
                 hd95 += _haus_dist_95(pred_ind, target_ind)
-    return hd95, n
+
+    return (hd95+0.0001)/(n+0.0001)
 
 
 def _haus_dist_95(A, B):

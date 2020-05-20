@@ -20,7 +20,7 @@ def one_cls_dice(output, target, label_idx):
         return (2 * int(intersection.sum())) / (int(pred_bool.sum()) + int(target_bool.sum()) + eps)
 
 
-def dice(output, target):
+def dice(output, target, misc=None):
     """
     Calculate dice for all channels.
     :param output:Output dimension: Batch x Channel x X x Y (x Z) float

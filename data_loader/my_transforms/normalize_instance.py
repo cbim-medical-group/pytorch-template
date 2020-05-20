@@ -11,10 +11,10 @@ class NormalizeInstance(object):
         self.training = training
 
     def __call__(self, sample):
-        image, mask = sample['image'], sample['mask']
+        image, mask, misc = sample['image'], sample['mask'], sample['misc']
         mean, std = image.mean(), image.std()
 
         if mean != 0 or std != 0:
             image = F.normalize(image, [mean for _ in range(0, image.shape[0])],
                                  [std for _ in range(0, image.shape[0])])
-        return {"image":image, "mask":mask}
+        return {"image":image, "mask":mask, "misc": misc}

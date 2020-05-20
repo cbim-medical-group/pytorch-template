@@ -2,7 +2,7 @@ import torch
 from imblearn.metrics import specificity_score
 
 
-def specificity(output, target):
+def specificity(output, target, misc):
     """
     Specificity = TN / (TN + FP)
     :param output: Batch x Channel x ....

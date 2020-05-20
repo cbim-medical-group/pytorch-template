@@ -133,11 +133,14 @@ class ConfigParser:
         #
         # return partial(getattr(module, module_name), *args, **module_args)
 
-    def init_transform(self, *args, **kwargs):
-        if 'transforms' not in self['data_loader']:
+    def init_transform(self, training=True, *args, **kwargs):
+        prefix = ""
+        if not training:
+            prefix = "test_"
+        if 'transforms' not in self[f'{prefix}data_loader']:
             return False
-        transforms = self['data_loader']['transforms']
-        transforms_args = self['data_loader']['transforms_args']
+        transforms = self[f'{prefix}data_loader']['transforms']
+        transforms_args = self[f'{prefix}data_loader']['transforms_args']
         transform_instances = []
         for module_name in transforms:
             transform = importlib.import_module(f"data_loader.my_transforms.{stringcase.snakecase(module_name)}")
@@ -155,6 +158,12 @@ class ConfigParser:
     def __getitem__(self, name):
         """Access items like ordinary dict."""
         return self.config[name]
+
+    def __setitem__(self, key, value):
+        """
+        Set items with the value. Used only for overriding dataloader.
+        """
+        self.config[key] = value
 
     def get_logger(self, name, verbosity=2):
         msg_verbosity = 'verbosity option {} is invalid. Valid options are {}.'.format(verbosity, self.log_levels.keys())

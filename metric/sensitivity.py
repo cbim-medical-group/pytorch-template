@@ -2,7 +2,7 @@ import torch
 from imblearn.metrics import sensitivity_score
 
 
-def sensitivity(output, target):
+def sensitivity(output, target, misc):
     """
     Sensitivity = TP / (TP + FN)
     :param output: Batch x Channel x ....

@@ -1,0 +1,70 @@
+{
+    "name": "NIPS_cls_real_exp4_cifar100",
+    "n_gpu": 1,
+
+    "model": {
+        "type": "Resnet101",
+        "args": {
+            "num_classes": 20
+        }
+    },
+    "data_loader": {
+        "type": "GeneralDataLoader",
+        "args":{
+            "data_dir": "/share_hd1/db/NIPS/CIFAR100/general_format_train_cifar100.h5",
+            "batch_size": 1024,
+            "shuffle": true,
+            "validation_split": 0.2,
+            "num_workers": 4
+        },
+        "transforms": ["ToTensor","Normalize"],
+        "transforms_args": {
+            "ToTensor": ["long"],
+            "Normalize": [[129.30, 124.07, 112.43], [51.20, 50.58, 51.56]]
+        }
+    },
+    "test_data_loader": {
+        "type": "GeneralDataLoader",
+        "args":{
+            "data_dir": "/share_hd1/db/NIPS/CIFAR100/general_format_test_cifar100.h5",
+            "batch_size": 256,
+            "shuffle": true,
+            "validation_split": 0.2,
+            "num_workers": 0
+        },
+        "transforms": ["RandomFlip","ToTensor","NormalizeInstance"],
+        "transforms_args": {
+            "RandomFlip": [true, true],
+            "ToTensor": ["long"]
+        }
+    },
+    "optimizer": {
+        "type": "SGD",
+        "args":{
+            "lr": 0.1,
+            "weight_decay": 0
+        }
+    },
+    "loss": ["cross_entropy_loss"],
+    "metric": ["accuracy", "sensitivity","specificity"],
+    "lr_scheduler": {
+        "type": "StepLR",
+        "args": {
+            "step_size": 50,
+            "gamma": 0.1
+        }
+    },
+    "trainer": {
+        "type": "Trainer",
+        "epochs": 300,
+
+        "save_dir": "saved/",
+        "save_period": 1,
+        "verbosity": 2,
+        
+        "monitor": "min val_loss",
+        "early_stop": 80,
+
+        "tensorboard": true
+    }
+}

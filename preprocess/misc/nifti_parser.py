@@ -5,18 +5,18 @@ Read Nifti format datasource and convert the files as a hdf5 format.
 ## Author: Qi Chang<qc58@cs.rutgers.edu>
 """
 import importlib
+
+import h5py
+import nibabel as nib
 import os
 import re
 import stringcase
-import h5py
-import nibabel as nib
-
-from utils import util
+from scipy import ndimage
 
 
 class NiftiParser:
-    def __init__(self, source_path: str, save_path: str, training_file_name: str, testing_file_name: str
-                 , split_ratio: float = 0.2, convert_type: str = "hdf5",name_handler: str = 'common_name_handler'):
+    def __init__(self, source_path: str, save_path: str, training_file_name: str, testing_file_name: str = None
+                 , split_ratio: float = 0.2, convert_type: str = "hdf5", name_handler: str = 'common_name_handler'):
         """
         Initial data related information.
         :param source_path: source path
@@ -34,6 +34,8 @@ class NiftiParser:
         self.save_path = save_path
         os.makedirs(save_path, exist_ok=True)
         self.training_file_name = training_file_name.replace(".h5", "")
+        if testing_file_name is None:
+            testing_file_name = training_file_name
         self.testing_file_name = testing_file_name.replace(".h5", "")
         self.convert_type = convert_type
         self.split_ratio = split_ratio
@@ -62,13 +64,14 @@ class NiftiParser:
                     # all_nifti_file[parent_folder][label + '$$pixdim'] = nifti_file.header.get('pixdim')
                     # all_nifti_file[parent_folder][label + '$$dim'] = nifti_file.header.get('dim')
 
-                    if parent_folder not in all_nifti_file:
-                        all_nifti_file[parent_folder] = {}
-                        folder_number += 1
-                    all_nifti_file[parent_folder][label] = os.path.join(root, file)
+                    if label is not None:
+                        if parent_folder not in all_nifti_file:
+                            all_nifti_file[parent_folder] = {}
+                            folder_number += 1
+                        all_nifti_file[parent_folder][label] = os.path.join(root, file)
         return all_nifti_file, folder_number
 
-    def save_nifti_to_hdf5(self, all_nifti_file, folder_number):
+    def save_nifti_to_hdf5(self, all_nifti_file, folder_number, resample=None):
         save_training_file = h5py.File(os.path.join(self.save_path, self.training_file_name + ".h5"), 'w')
         if self.training_file_name != self.testing_file_name:
             save_testing_file = h5py.File(os.path.join(self.save_path, self.testing_file_name + ".h5"), 'w')
@@ -93,7 +96,18 @@ class NiftiParser:
                 pixdim = nifti_file.header.get('pixdim')
                 dim = nifti_file.header.get('dim')
 
+
+                if resample is not None and len(resample)==3:
+                    orig_x_spacing = pixdim[1]
+                    orig_y_spacing = pixdim[2]
+                    orig_z_spacing = pixdim[3]
+                    array_file = ndimage.zoom(array_file, (
+                    orig_x_spacing / resample[0], orig_y_spacing / resample[1], orig_z_spacing / resample[2]), order=0)
+                    pixdim = [0,resample[0],resample[1], resample[2]]
+
                 ds = current_file.create_dataset(f"{d_type}/{file_name}", data=array_file)
+
+
                 ds.attrs["x_spacing"] = pixdim[1]
                 ds.attrs["y_spacing"] = pixdim[2]
                 ds.attrs["z_spacing"] = pixdim[3]
@@ -110,12 +124,23 @@ class NiftiParser:
 if __name__ == "__main__":
     # ACDC Parser
     parser = NiftiParser("/Users/qichang/Downloads/training", "/Users/qichang/PycharmProjects/medical_dataset/ACDC_new",
-                         "ACDC_train", "ACDC_train", split_ratio=0)
+                         "ACDC_train", "ACDC_test", split_ratio=0.2)
+
+    # parser = NiftiParser("/Users/qichang/PycharmProjects/medical_dataset/MMWHS/",
+    #                      "/Users/qichang/PycharmProjects/medical_dataset/MMWHS/processed",
+    #                      "MMWHS_train_iso", "MMWHS_train_iso", split_ratio=0, name_handler="MMWHS_name_handler")
 
     # Brats Parser
     # parser = NiftiParser("/Users/qichang/PycharmProjects/gar_v0.1/data/BRATS/MICCAI_BraTS_2018_Data_Training/LGG",
     #                      "/Users/qichang/PycharmProjects/medical_dataset/BraTS2018",
     #                      "BraTS18_LGG_train", "BraTS18_LGG_test", name_handler="brats18_name_handler")
 
+    # ISLES Parser
+    # parser = NiftiParser("/share_hd1/db/ISLES/TRAINING",
+    #                      "/share_hd1/db/ISLES/processed",
+    #                      "ISLES_train", "ISLES_test", split_ratio=0.2, name_handler="ISLES_2018_name_handler")
+
+
     all_nifti_files, folder_number = parser.read_all_nifti_files()
+    # parser.save_nifti_to_hdf5(all_nifti_files, folder_number, resample=[1,1,1])
     parser.save_nifti_to_hdf5(all_nifti_files, folder_number)

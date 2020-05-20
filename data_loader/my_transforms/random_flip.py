@@ -18,7 +18,7 @@ class RandomFlip:
         Returns:
             Randomly flipped image.
         """
-        image, mask = sample['image'], sample['mask']
+        image, mask, misc = sample['image'], sample['mask'], sample['misc']
         if not self.training:
             # If testing, will not flip.
             return {'image': image, 'mask': mask}
@@ -35,4 +35,4 @@ class RandomFlip:
             if len(mask.shape) == 2:
                 mask = mask[::-1, :].copy()
 
-        return {'image': image, 'mask': mask}
+        return {'image': image, 'mask': mask, 'misc': misc}

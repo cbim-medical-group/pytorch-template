@@ -40,15 +40,25 @@ class Trainer(BaseTrainer):
         """
         self.model.train()
         self.train_metrics.reset()
-        for batch_idx, (data, target) in enumerate(self.data_loader):
+        # for batch_idx, (data, target, misc) in enumerate(self.data_loader):
+        for batch_idx, enumerate_result in enumerate(self.data_loader):
+            if type(self.data_loader).__name__ == "GeneralDataLoader":
+                data, target, misc = enumerate_result
+            else:
+                data, target = enumerate_result
+                misc = None
             data, target = data.to(self.device), target.to(self.device)
 
             self.optimizer.zero_grad()
             output = self.model(data)
-            loss = self.criterion[0](output, target)
+            each_loss = []
+            loss = self.criterion[0](output, target, misc)
+            each_loss.append(float(loss))
             if len(self.criterion) > 1:
                 for idx in range(1, len(self.criterion)):
-                    loss += self.criterion[idx](output, target)
+                    loss2 = self.criterion[idx](output, target, misc)
+                    loss = loss + loss2
+                    each_loss.append(float(loss2))
             # loss = self.criterion(output, target)
             loss.backward()
             self.optimizer.step()
@@ -56,16 +66,14 @@ class Trainer(BaseTrainer):
             self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
             self.train_metrics.update('loss', loss.item())
             for met in self.metric_ftns:
-                self.train_metrics.update(met.__name__, met(output, target))
+                self.train_metrics.update(met.__name__, met(output, target, misc))
 
             if batch_idx % self.log_step == 0:
-                self.logger.debug('Train Epoch: {} {} Loss: {:.6f}'.format(
-                    epoch,
-                    self._progress(batch_idx),
-                    loss.item()))
-                if data.shape[1] != 3 and data.shape[1] != 1:
-                    vis_data = data[:, 2:3, :, :]
-                self.writer.add_image('input', make_grid(vis_data.cpu(), nrow=8, normalize=True))
+                self.logger.debug(f'Train Epoch: {epoch} {self._progress(batch_idx)} Loss:{loss.item():.6f}({each_loss})')
+                vis_data = data
+                # if data.shape[1] != 3 and data.shape[1] != 1:
+                #     vis_data = data[:, 2:3, :, :]
+                # self.writer.add_image('input', make_grid(vis_data.cpu(), nrow=8, normalize=True))
 
             if batch_idx == self.len_epoch:
                 break
@@ -77,6 +85,7 @@ class Trainer(BaseTrainer):
 
         if self.lr_scheduler is not None:
             self.lr_scheduler.step()
+            self.logger.debug(f"Learning Rate:{self.lr_scheduler.get_lr()}")
         return log
 
     def _valid_epoch(self, epoch):
@@ -89,24 +98,36 @@ class Trainer(BaseTrainer):
         self.model.eval()
         self.valid_metrics.reset()
         with torch.no_grad():
-            for batch_idx, (data, target) in enumerate(self.valid_data_loader):
+            for batch_idx, enumerate_result in enumerate(self.valid_data_loader):
+                if type(self.data_loader).__name__ == "GeneralDataLoader":
+                    data, target, misc = enumerate_result
+                else:
+                    data, target = enumerate_result
+                    misc = None
                 data, target = data.to(self.device), target.to(self.device)
 
                 output = self.model(data)
 
-                loss = self.criterion[0](output, target)
+                loss = self.criterion[0](output, target, misc)
                 if len(self.criterion) > 1:
                     for idx in range(1, len(self.criterion)):
-                        loss += self.criterion[idx](output, target)
+                        loss += self.criterion[idx](output, target, misc)
 
                 self.writer.set_step((epoch - 1) * len(self.valid_data_loader) + batch_idx, 'valid')
                 self.valid_metrics.update('loss', loss.item())
                 for met in self.metric_ftns:
-                    self.valid_metrics.update(met.__name__, met(output, target))
+                    self.valid_metrics.update(met.__name__, met(output, target, misc))
 
-                if data.shape[1] != 3 and data.shape[1] != 1:
-                    vis_data = data[:, 2:3, :, :]
-                self.writer.add_image('input', make_grid(vis_data.cpu(), nrow=8, normalize=True))
+                if batch_idx % self.log_step == 0:
+                    self.logger.debug('Validation Epoch: {} {} Loss: {:.6f}'.format(
+                        epoch,
+                        self._progress(batch_idx),
+                        loss.item()))
+
+                vis_data=data
+                # if data.shape[1] != 3 and data.shape[1] != 1:
+                #     vis_data = data[:, 2:3, :, :]
+                # self.writer.add_image('input', make_grid(vis_data.cpu(), nrow=8, normalize=True))
 
         # add histogram of model parameters to the tensorboard
         for name, p in self.model.named_parameters():

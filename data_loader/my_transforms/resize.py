@@ -28,7 +28,7 @@ class Resize:
         self.training = training
 
     def __call__(self, sample):
-        image, mask = sample['image'], sample['mask']
+        image, mask, misc = sample['image'], sample['mask'], sample['misc']
 
         # Need to combine batch and channel number and move to the end of the matrix as channel.
         c, h, w = image.shape
@@ -43,4 +43,4 @@ class Resize:
         new_image = np.moveaxis(new_image, -1, 0).reshape((c, self.load_size[0], self.load_size[1]))
         # new_mask = np.moveaxis(new_mask, -1, 0).reshape((self.load_size[0], self.load_size[1]))
 
-        return {'image': new_image, 'mask': new_mask}
+        return {'image': new_image, 'mask': new_mask, 'misc': misc}

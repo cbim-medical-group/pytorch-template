@@ -30,7 +30,7 @@ class Scale:
         self.training = training
 
     def __call__(self, sample):
-        image, mask = sample['image'], sample['mask']
+        image, mask, misc = sample['image'], sample['mask'], sample['misc']
 
         # Need to combine batch and channel number and move to the end of the matrix as channel.
         c, h, w = image.shape
@@ -51,4 +51,4 @@ class Scale:
         new_image = np.moveaxis(new_image, -1, 0).reshape((c, new_h, new_w))
         # new_mask = np.moveaxis(new_mask, -1, 0).reshape((new_h, new_w))
 
-        return {'image': new_image, 'mask': new_mask}
+        return {'image': new_image, 'mask': new_mask, 'misc': misc}

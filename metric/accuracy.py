@@ -1,7 +1,7 @@
 import torch
 
 
-def accuracy(output, target):
+def accuracy(output, target, misc):
     with torch.no_grad():
         pred = torch.argmax(output, dim=1)
         assert pred.shape[0] == len(target)

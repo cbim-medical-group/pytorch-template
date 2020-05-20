@@ -5,7 +5,9 @@ General purpose data loader and dataset.
 ## Author: Qi Chang<qc58@cs.rutgers.edu>
 """
 import h5py
+import math
 import numpy as np
+from skimage.util import view_as_windows
 from torch.utils import data
 from torch.utils.data import DataLoader
 from torch.utils.data.dataloader import default_collate
@@ -46,7 +48,10 @@ class GeneralDataLoader(DataLoader):
         :param num_workers:
         :param collate_fn:
         """
-
+        if training:
+            self.root_path = "train"
+        else:
+            self.root_path = "val"
         if isinstance(validation_split, list):
             assert len(validation_split) >= 2, "The validation_split array should contains at least 2 sub arrays for " \
                                                "train and validation"
@@ -70,10 +75,10 @@ class GeneralDataLoader(DataLoader):
                 'num_workers': num_workers
             }
             super().__init__(**self.init_kwargs)
-        elif isinstance(validation_split, float):
+        elif isinstance(validation_split, float) or isinstance(validation_split, int):
             # if data_dir is not list but string, also validation_split is float, split the dataset as val.
             assert isinstance(data_dir, str), "if validation_split is float, the data_dir only support string type"
-            dataset = GeneralDataset(data_dir, transforms=transforms, paths=["train"])
+            dataset = GeneralDataset(data_dir, transforms=transforms, paths=[self.root_path])
             print(f"GeneralDataLoader: split dataset by percentage:{validation_split * 100}%")
             self.validation_split = validation_split
             self.shuffle = shuffle
@@ -138,6 +143,8 @@ class GeneralDataset(data.Dataset):
         :param transforms: my_transforms
         :param paths: array of all keys which will loaded
         """
+
+        print(f"Load dataset: {h5_filepath}")
         super(GeneralDataset, self).__init__()
         self.h5_filepath = h5_filepath
         self.transforms = transforms
@@ -159,9 +166,45 @@ class GeneralDataset(data.Dataset):
             img, label = h5_file[img_path][()], h5_file[label_path][()]
 
             if self.transforms is not None:
-                img = self.transforms({'image': img, 'mask': label})
+                img = self.transforms({'image': img, 'mask': label, "misc": {
+                    "index": index,
+                    "img_path": img_path,
+                    "label_path": label_path
+                }})
 
-        return img['image'], img['mask']
+        return img['image'], img['mask'], img['misc']
 
     def __len__(self):
         return len(self.img_list)
+
+    @staticmethod
+    def split_volume(input, output_size, step):
+        ext_input_pad = [(0, (math.ceil(i / j) - 1) * j + k - i) for i, j, k in zip(input.shape, step, output_size)]
+        ext_input = np.pad(input, ext_input_pad)
+
+        split_input = view_as_windows(ext_input, output_size, step)
+
+        orig_split_pos = split_input.shape[:len(split_input.shape) // 2]
+        ext_shape = ext_input.shape
+        reshape_ooutput_size = list(output_size)
+        reshape_ooutput_size.insert(0, -1)
+
+        split_input = np.reshape(split_input, reshape_ooutput_size)
+
+        return split_input, orig_split_pos, ext_shape
+
+    @staticmethod
+    def combine_volume(input, final_size, ext_size, orig_split_pos, step):
+        ext_input_array = np.zeros(ext_size)
+        block_size = input.shape
+        input = input.reshape(orig_split_pos + block_size[1:])
+
+        for i in range(orig_split_pos[0]):
+            for j in range(orig_split_pos[1]):
+                for k in range(orig_split_pos[2]):
+                    ext_input_array[step[0] * i: step[0] * i + block_size[1],
+                    step[1] * j: step[1] * j + block_size[2],
+                    step[2] * k: step[2] * k + block_size[3]] += input[i, j, k]
+
+
+        return ext_input_array[:final_size[0], : final_size[1], : final_size[2]]

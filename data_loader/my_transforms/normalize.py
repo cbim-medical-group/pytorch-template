@@ -8,14 +8,22 @@ class Normalize(object):
     """
 
     def __init__(self, mean, std, training=True):
-        self.mean = mean
-        self.std = std
+        if isinstance(mean, list):
+            self.mean = tuple(mean)
+            self.std = tuple(std)
+        else:
+            self.mean = mean
+            self.std = std
+
         self.training = training
 
     def __call__(self, sample):
-        image, mask = sample['image'], sample['mask']
-
-        if self.mean != 0 or self.std != 0:
+        image, mask, misc = sample['image'], sample['mask'], sample['misc']
+        if self.mean == 0 or self.std == 0:
+            return {"image": image, "mask": mask}
+        if isinstance(self.mean, tuple):
+            image = F.normalize(image, self.mean, self.std)
+        elif isinstance(self.mean, int) or isinstance(self.mean, float):
             image = F.normalize(image, [self.mean for _ in range(0, image.shape[0])],
                                 [self.std for _ in range(0, image.shape[0])])
-        return {"image": image, "mask": mask}
+        return {"image": image, "mask": mask, "misc": misc}

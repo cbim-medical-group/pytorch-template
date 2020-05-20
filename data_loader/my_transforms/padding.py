@@ -18,7 +18,7 @@ class Padding:
         self.training = training
 
     def __call__(self, sample):
-        image, mask = sample['image'], sample['mask']
+        image, mask, misc = sample['image'], sample['mask'], sample['misc']
         if len(image.shape) == 2:
             image = np.expand_dims(image, 0)
         c, h, w = image.shape
@@ -31,4 +31,4 @@ class Padding:
         if len(mask.shape) == 2:
             # segmentation
             mask = np.pad(mask, (pad_h, pad_w))
-        return {'image': new_image, 'mask': mask}
+        return {'image': new_image, 'mask': mask, 'misc': misc}

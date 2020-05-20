@@ -1,12 +1,11 @@
 import argparse
 import collections
 import importlib
-
+import stringcase
 import numpy as np
 import torch
-
+import json
 from parse_config import ConfigParser
-from trainer import Trainer
 
 # fix random seeds for reproducibility
 SEED = 123
@@ -17,8 +16,10 @@ np.random.seed(SEED)
 
 
 def main(config):
+    print(f'==============Configuration==============')
+    print(f'{json.dumps(config._config, indent=4)}')
+    print(f'==============End Configuration==============')
     logger = config.get_logger('train')
-
     # setup data_loader instances
     my_transform = config.init_transform()
     data_loader = config.init_obj('data_loader', transforms=my_transform, training=True)
@@ -40,12 +41,18 @@ def main(config):
 
     lr_scheduler = config.init_obj('lr_scheduler', torch.optim.lr_scheduler, optimizer)
 
+    # Sould config trainer name.
+    trainer_name = config["trainer"]["type"]
+    module = importlib.import_module(f"trainer.{stringcase.snakecase(trainer_name)}")
+    Trainer = getattr(module, trainer_name)
+
     trainer = Trainer(model, criterion, metrics, optimizer,
                       config=config,
                       data_loader=data_loader,
                       valid_data_loader=valid_data_loader,
                       lr_scheduler=lr_scheduler)
 
+    logger.info(f"Use Trainer: {trainer_name}")
     trainer.train()
 
 
