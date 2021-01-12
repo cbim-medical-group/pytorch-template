@@ -33,4 +33,6 @@ class ExpPadding3d:
         if len(mask.shape) == 2:
             # segmentation
             mask = np.pad(mask, (pad_d,(0,0)))
+        elif len(mask.shape) == 4:
+            mask = np.pad(mask, ((0, 0), pad_h, pad_w, pad_d), mode="edge")
         return {'image': new_image, 'mask': mask, 'misc': misc}

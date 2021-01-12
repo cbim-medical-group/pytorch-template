@@ -1,6 +1,7 @@
 import argparse
 import importlib
 
+import json
 import numpy as np
 import os
 import plotly.graph_objects as go
@@ -11,8 +12,17 @@ from tqdm import tqdm
 from data_loader.general_data_loader import GeneralDataset
 from parse_config import ConfigParser
 
+SEED = 123
+torch.manual_seed(SEED)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+np.random.seed(SEED)
 
 def main(config):
+    print(f'==============Configuration==============')
+    print(f'{json.dumps(config._config, indent=4)}')
+    print(f'==============End Configuration==============')
+
     logger = config.get_logger('test')
 
     config['data_loader'] = config['test_data_loader']

@@ -1,11 +1,12 @@
 import torch.nn as nn
+from model.backbones.vgg2deeper_3d import VGG
 
-from model.vgg_3d import _vgg
 
+class Vgg16Bn3d(nn.Module):
+    def __init__(self, pretrained=False, progress=True, **kwargs):
+        super().__init__()
+        # self.model = _vgg('vgg16_bn', 'D', True, False, num_classes=num_classes)
+        self.model = VGG("VGG16", **kwargs)
 
-class Vgg16Bn(nn.Module):
-    def __init__(self, features, num_classes=20, init_weights=True):
-        self.model = _vgg('vgg16_bn', 'D', True, False, num_classes=num_classes)
-
-    def forward(self, x):
-        return self.model(x)
+    def forward(self, x, pred_y):
+        return self.model(x, pred_y)

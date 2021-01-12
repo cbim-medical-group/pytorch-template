@@ -5,9 +5,9 @@ import torch.nn as nn
 
 cfg = {
     'VGG11': [64, 'M2', 128, 'M2', 256, 256, 'M2', 512, 512, 'M', 512, 512, 'M'],
-    'VGG13': [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
-    'VGG16': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
-    'VGG19': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
+    'VGG13': [64, 64, 'M2', 128, 128, 'M2', 256, 256, 'M2', 512, 512, 'M', 512, 512, 'M'],
+    'VGG16': [64, 64, 'M2', 128, 128, 'M2', 256, 256, 256, 'M2', 512, 512, 512, 'M', 512, 512, 512, 'M'],
+    'VGG19': [64, 64, 'M2', 128, 128, 'M2', 256, 256, 256, 256, 'M2', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
 }
 
 
@@ -15,7 +15,7 @@ class VGG(nn.Module):
     def __init__(self, vgg_name, num_classes=10):
         super(VGG, self).__init__()
         self.features = self._make_layers(cfg[vgg_name])
-        self.classifier = nn.Linear(512*3*3+20, num_classes)
+        self.classifier = nn.Linear(512*6*6+num_classes, num_classes)
 
     def forward(self, x, pred_y):
         out = self.features(x)
@@ -31,7 +31,7 @@ class VGG(nn.Module):
 
     def _make_layers(self, cfg):
         layers = []
-        in_channels = 3
+        in_channels = 4
         for x in cfg:
             if x == 'M':
                 layers += [nn.MaxPool3d(kernel_size=(2, 2, 1), stride=(2, 2, 1))]
@@ -49,9 +49,12 @@ class VGG(nn.Module):
 
 
 def test():
-    net = VGG('VGG11')
-    x = torch.randn(2,3,120,120,32)
-    y = net(x)
+    net = VGG('VGG11', num_classes=32)
+    x = torch.randn(2,4,200,200,13)
+
+    zero_y = torch.zeros((2, 32))
+
+    y = net(x, zero_y)
     print(y.size())
 
 # test()

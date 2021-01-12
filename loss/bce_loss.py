@@ -2,7 +2,7 @@ import torch
 from torch.nn import functional as F
 
 
-def bce_loss(output, target, weight=None):
+def bce_loss(output, target, misc, weight=None):
     if weight is None:
         return F.binary_cross_entropy(output, target)
     else:

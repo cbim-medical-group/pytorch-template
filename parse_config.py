@@ -101,9 +101,14 @@ class ConfigParser:
 
         if not module:
             #If module is None, try to use the snakecase's module_name as module.
-            module = importlib.import_module(f"{name}.{stringcase.snakecase(module_name)}")
+            module_names = module_name.split("/")
+            module_names = [stringcase.snakecase(name) for name in module_names]
+            module_names = ".".join(module_names)
+            # The virtual test_data_loader config should under data_loader folder
+            package_name = name.replace('test_data_loader', 'data_loader')
+            module = importlib.import_module(f"{package_name}.{module_names}")
 
-        return getattr(module, module_name)(*args, **module_args)
+        return getattr(module, module_name.split("/")[-1])(*args, **module_args)
 
     def init_ftn(self, name, module=None, *args, **kwargs):
         """

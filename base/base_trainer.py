@@ -140,12 +140,15 @@ class BaseTrainer:
             'config': self.config
         }
         filename = str(self.checkpoint_dir / 'checkpoint-epoch{}.pth'.format(epoch))
-        torch.save(state, filename)
-        self.logger.info("Saving checkpoint: {} ...".format(filename))
-        if save_best:
-            best_path = str(self.checkpoint_dir / 'model_best.pth')
-            torch.save(state, best_path)
-            self.logger.info("Saving current best: model_best.pth ...")
+        try:
+            torch.save(state, filename)
+            self.logger.info("Saving checkpoint: {} ...".format(filename))
+            if save_best:
+                best_path = str(self.checkpoint_dir / 'model_best.pth')
+                torch.save(state, best_path)
+                self.logger.info("Saving current best: model_best.pth ...")
+        except:
+            print(f"torch save error, could not save the state info...")
 
     def _resume_checkpoint(self, resume_path):
         """
@@ -160,7 +163,7 @@ class BaseTrainer:
         self.mnt_best = checkpoint['monitor_best']
 
         # load architecture params from checkpoint.
-        if checkpoint['config']['arch'] != self.config['arch']:
+        if checkpoint['config']['model'] != self.config['model']:
             self.logger.warning("Warning: Architecture configuration given in config file is different from that of "
                                 "checkpoint. This may yield an exception while state_dict is being loaded.")
         # TODO: Need to verify if the model need call resume rather than load_state_dict, because the GAN Network is very special.

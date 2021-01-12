@@ -29,8 +29,7 @@ class ExpRandomShiftNaive:
 
     def __call__(self, sample):
         # Here we just use mask instead of image as input. Be careful if you use this script otherwise!
-        mask, misc = sample['mask'], sample['misc']
-        mask = self.move_mass_to_center(mask)
+        mask, misc = sample['data'], sample['misc']
 
         mri_img = mask[:, :, ::self.sample_number]
         h, w, d = mri_img.shape

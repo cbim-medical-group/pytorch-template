@@ -1,0 +1,58 @@
+{
+    "name": "Isles_seg_eccv_exp8.3_mar3",
+    "n_gpu": 1,
+
+    "model": {
+        "type": "Unet",
+        "args": {
+            "in_channel" : 3,
+            "out_channel": 2
+        }
+    },
+    "data_loader": {
+        "type": "GeneralDataLoader",
+        "args":{
+            "data_dir": ["/share_hd1/db/Nuclei/lifelong/syn_images_v3/Brain_lifelong/general_Brain_lifelong_noDropout_epoch80_task2_isles.h5",
+                "/share_hd1/db/Brain/real_images/general_test_isles_ADC.h5"],
+            "batch_size": 12,
+            "shuffle": true,
+            "validation_split": [["train"],["val"]],
+            "num_workers": 0
+        },
+        "transforms": ["Homochrome","Padding", "RandomCrop","ToTensor","NormalizeInstance"],
+        "transforms_args": {
+            "Padding": [200],
+            "Homochrome": [-1],
+            "RandomCrop": [128]
+        }
+    },
+    "optimizer": {
+        "type": "Adam",
+        "args":{
+            "lr": 0.001,
+            "weight_decay": 0,
+            "amsgrad": true
+        }
+    },
+    "loss": ["cross_entropy_loss","tversky_loss"],
+    "metric": ["accuracy", "dice"],
+    "lr_scheduler": {
+        "type": "StepLR",
+        "args": {
+            "step_size": 50,
+            "gamma": 0.1
+        }
+    },
+    "trainer": {
+        "epochs": 200,
+
+        "save_dir": "saved/",
+        "save_period": 1,
+        "verbosity": 2,
+        
+        "monitor": "min val_loss",
+        "early_stop": 10,
+
+        "tensorboard": true
+    }
+}

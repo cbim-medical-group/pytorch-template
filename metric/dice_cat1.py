@@ -4,7 +4,7 @@ import torch
 from metric.dice import one_cls_dice
 
 
-def dice_cat1(output, target):
+def dice_cat1(output, target, misc):
     """
     Calculate dice for all channels.
     :param output:Output dimension: Batch x Channel x X x Y (x Z) float

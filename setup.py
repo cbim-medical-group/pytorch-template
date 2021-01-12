@@ -38,6 +38,7 @@ setup(
         'tensorboard>=1.14.0',
         'scikit-learn==0.22',
         'imbalanced-learn==0.6.1',
-        'opencv-python==4.1.2.30'
+        'opencv-python==4.1.2.30',
+        'pytictoc==1.5.1'
     ]
 )

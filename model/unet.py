@@ -48,10 +48,13 @@ class ConvUpBlock(nn.Module):
         self.conv2 = dilated_conv(out_channel, out_channel, dropout_rate=dropout_rate, dilation=dilation)
 
     def forward(self, x, x_skip):
-        x = self.up(x)
-        H_diff = x.shape[2] - x_skip.shape[2]
-        W_diff = x.shape[3] - x_skip.shape[3]
-        x_skip = F.pad(x_skip, (0, W_diff, 0, H_diff), mode='reflect')
+        # x = self.up(x)
+        # H_diff = x.shape[2] - x_skip.shape[2]
+        # W_diff = x.shape[3] - x_skip.shape[3]
+        # x_skip = F.pad(x_skip, (0, W_diff, 0, H_diff), mode='reflect')
+        # x = torch.cat([x, x_skip], 1)
+
+        x = self.up(x, output_size=x_skip.shape)
         x = torch.cat([x, x_skip], 1)
         x = self.conv1(x)
         x = self.conv2(x)

@@ -11,6 +11,9 @@ class Brats18NameHandler:
         :return:
         """
         label_names = []
+        match_root = re.search(r"([^\/]+)$", root_path)
+        root_name = match_root.groups()
+        label_names.append(root_name[0])
         match_id_result = re.search(r"([^_]+).nii.gz", filename)
 
         matches = match_id_result.groups()

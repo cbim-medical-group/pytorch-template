@@ -1,7 +1,7 @@
 import torch
 from torch.nn import functional as F
 
-def tversky_loss(output, target, alpha=0.5, beta=0.5, eps=1e-7):
+def tversky_loss(output, target, misc, alpha=0.5, beta=0.5, eps=1e-7):
     """Computes the Tversky loss [1].
     Args:
         target: a tensor of shape [B, H, W] or [B, 1, H, W].

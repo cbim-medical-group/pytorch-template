@@ -1,0 +1,62 @@
+{
+    "name": "MCNet_seg-exp2",
+    "n_gpu": 1,
+
+    "model": {
+        "type": "Unet3d",
+        "args": {
+            "in_channel" : 4,
+            "out_channel": 4
+        }
+    },
+    "data_loader": {
+        "type": "FasterGeneralDataLoader",
+        "args":{
+            "data_dir": ["/research/cbim/vast/qc58/pub-db/CAP/process/MC-Net/new_cap_process_train.h5","/research/cbim/vast/qc58/pub-db/CAP/process/MC-Net/new_cap_process_test.h5"],
+            "batch_size": 16,
+            "shuffle": true,
+            "validation_split": [["train"],["test"]],
+            "num_workers": 0
+        },
+        "transforms": ["ExpSaLaSegSelection","ExpPadding3d","ExpCentralCrop3d","MoveAxis","ToTensor","Normalize3d","NormalizeLabel3d"],
+        "transforms_args": {
+            "ExpSaLaSegSelection": [13, 3, false, true],
+            "ExpPadding3d": [[13, 200,200]],
+            "ExpCentralCrop3d": [[13, 200,200]],
+            "MoveAxis": [1, -1, true],
+            "Normalize3d": [[128,4.3,4.3,4.3],[168.6,41.38,41.38,41.38]],
+            "NormalizeLabel3d": [[0,0,0,0],[100,1,1,1]],
+            "ToTensor": ["float"]
+        }
+    },
+    "optimizer": {
+        "type": "SGD",
+        "args":{
+            "lr": 0.01,
+            "momentum": 0.9,
+            "weight_decay": 0.0005
+        }
+    },
+    "loss": ["mse"],
+    "metric": ["exp_dt_dice_binary"],
+    "lr_scheduler": {
+        "type": "StepLR",
+        "args": {
+            "step_size": 50,
+            "gamma": 0.1
+        }
+    },
+    "trainer": {
+        "type": "TrainerMcnet",
+        "epochs": 300,
+
+        "save_dir": "saved/",
+        "save_period": 1,
+        "verbosity": 2,
+
+        "monitor": "min val_loss",
+        "early_stop": 200,
+
+        "tensorboard": true
+    }
+}

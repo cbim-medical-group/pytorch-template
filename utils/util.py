@@ -1,11 +1,15 @@
 import json
-import re
+import os
 from collections import OrderedDict
 from itertools import repeat
 from pathlib import Path
-from types import SimpleNamespace
-from functools import singledispatch
+
+import numpy as np
 import pandas as pd
+import re
+from functools import singledispatch
+from scipy.ndimage.filters import gaussian_filter
+from types import SimpleNamespace
 
 
 def ensure_dir(dirname):
@@ -85,14 +89,71 @@ def show_figures(imgs, new_flag=False):
 
     plt.show()
 
+
 @singledispatch
 def dict2obj(o):
     return o
 
+
 @dict2obj.register(dict)
 def handle_obj(obj):
-    return SimpleNamespace(**{ k:dict2obj(v) for k,v in obj.items() })
+    return SimpleNamespace(**{k: dict2obj(v) for k, v in obj.items()})
+
 
 @dict2obj.register(list)
 def handle_list(lst):
     return [dict2obj(i) for i in lst]
+
+
+def smooth_obj_one_case(orig_array):
+    """
+    Smooth label array[x, y, z], with scale or size settings.
+    :param orig_array:
+    :param resize_type:
+    :param scale:
+    :return:
+    """
+    scale_array = []
+    for i in range(orig_array.shape[-1]):
+        slice = orig_array[:, :, i]
+        final_mask = np.zeros_like(slice)
+        unique_id = np.unique(slice)[1:].tolist()
+        if len(unique_id) == 0:
+            scale_array.append(slice)
+            continue
+        for label_id in unique_id:
+            show_img = np.zeros_like(slice)
+            show_img[slice == label_id] = 1
+
+            # blurred_img = gaussian_filter(show_img, sigma=4)
+            blurred_img = gaussian_filter(show_img, sigma=4)
+            blurred_img[blurred_img > 0.5] = 1
+            blurred_img[blurred_img <= 0.5] = 0
+            final_mask[blurred_img == 1] = label_id
+        scale_array.append(final_mask)
+
+    return np.stack(scale_array, axis=-1)
+
+
+'''
+    For the given path, get the List of all files in the directory tree 
+'''
+def getListOfFiles(dirName, file_type=[]):
+    # create a list of file and sub directories
+    # names in the given directory
+    assert type(file_type) == list, "file_type should be a list."
+    listOfFile = os.listdir(dirName)
+    allFiles = list()
+    # Iterate over all the entries
+    for entry in listOfFile:
+        # Create full path
+        fullPath = os.path.join(dirName, entry)
+        # If entry is a directory then get the list of files in this directory
+        if os.path.isdir(fullPath):
+            allFiles = allFiles + getListOfFiles(fullPath, file_type)
+        elif len(file_type) == 0:
+            allFiles.append(fullPath)
+        elif any(x.lower() in fullPath.lower() for x in file_type):
+            allFiles.append(fullPath)
+    return allFiles
+

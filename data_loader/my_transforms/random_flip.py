@@ -21,7 +21,7 @@ class RandomFlip:
         image, mask, misc = sample['image'], sample['mask'], sample['misc']
         if not self.training:
             # If testing, will not flip.
-            return {'image': image, 'mask': mask}
+            return {'image': image, 'mask': mask, 'misc': misc}
 
         if len(image.shape) == 2:
             image = np.expand_dims(image, 0)

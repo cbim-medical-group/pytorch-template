@@ -42,6 +42,6 @@ def readlist(dcm_path, save_path, save_name, test_case_number):
 
     result_file.close()
 
-# readlist("/share_hd1/db/BRATS/2018/HGG","/share_hd1/db/BRATS/2018","BraTS18.h5",40)
+readlist("/share_hd1/db/BRATS/2018/HGG","/share_hd1/db/BRATS/2018","BraTS18.h5",40)
 
-readlist("/share_hd1/db/BRATS/2018/LGG","/share_hd1/db/BRATS/2018","BraTS18_LGG.h5",15)
+# readlist("/share_hd1/db/BRATS/2018/LGG","/share_hd1/db/BRATS/2018","BraTS18_LGG.h5",15)

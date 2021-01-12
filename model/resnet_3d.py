@@ -147,7 +147,9 @@ class ResNet(nn.Module):
                                        stride=2)
 
         self.avgpool = nn.AdaptiveAvgPool3d((1, 1, 1))
-        self.fc = nn.Linear(block_inplanes[3] * block.expansion, n_classes)
+
+
+        self.fc = nn.Linear(block_inplanes[3] * block.expansion + n_classes, n_classes)
 
         for m in self.modules():
             if isinstance(m, nn.Conv3d):
@@ -193,7 +195,7 @@ class ResNet(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def forward(self, x):
+    def forward(self, x, pred_y):
         # print(x.size())
         x = self.conv1(x)
         x = self.bn1(x)
@@ -209,6 +211,9 @@ class ResNet(nn.Module):
         x = self.avgpool(x)
         # print(f"avgpool:{x.size()}")
         x = x.view(x.size(0), -1)
+
+        x = torch.cat((x, pred_y), 1)
+
         x = self.fc(x)
         # print(f"fc:{x.size()}")
 
@@ -234,3 +239,17 @@ def generate_model(model_depth, **kwargs):
         model = ResNet(Bottleneck, [3, 24, 36, 3], get_inplanes(), **kwargs)
 
     return model
+
+
+def test():
+    net = generate_model(34, n_classes=32, n_input_channels=4)
+    # net = VGG('VGG11', num_classes=32)
+    x = torch.randn(2,4,200,200,13)
+
+    zero_y = torch.zeros((2, 32))
+
+    y = net(x, zero_y)
+    print(y.size())
+
+# test()
+

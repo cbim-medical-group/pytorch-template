@@ -1,0 +1,60 @@
+{
+    "name": "MCNet_deepervgg19-exp5",
+    "n_gpu": 1,
+
+    "model": {
+        "type": "Vgg19dBn3d",
+        "args": {
+            "num_classes": 32
+        }
+    },
+    "data_loader": {
+        "type": "GeneralDataLoader",
+        "args":{
+            "data_dir": ["/research/cbim/vast/qc58/pub-db/CAP/process/MC-Net/cap_process_train.h5","/research/cbim/vast/qc58/pub-db/CAP/process/MC-Net/cap_process_test.h5"],
+            "batch_size": 16,
+            "shuffle": true,
+            "validation_split": [["train"],["test"]],
+            "num_workers": 0
+        },
+        "transforms": ["ExpSaLaSelection","ExpPadding3d","ExpCentralCrop3d","MoveAxis","ToTensor","Normalize3d"],
+        "transforms_args": {
+            "ExpSaLaSelection": [13, 3],
+            "ExpPadding3d": [[13, 200,200]],
+            "ExpCentralCrop3d": [[13, 200,200]],
+            "MoveAxis": [1, -1, true],
+            "Normalize3d": [[0,0,0,0],[100,1,1,1]],
+            "ToTensor": ["float"]
+        }
+    },
+    "optimizer": {
+        "type": "SGD",
+        "args":{
+            "lr": 0.0001,
+            "momentum": 0.9,
+            "weight_decay": 0.0005
+        }
+    },
+    "loss": ["exp_alignment_mcnet_loss"],
+    "metric": ["exp_alignment_mcnet"],
+    "lr_scheduler": {
+        "type": "StepLR",
+        "args": {
+            "step_size": 500,
+            "gamma": 0.1
+        }
+    },
+    "trainer": {
+        "type": "TrainerUnsupervised",
+        "epochs": 300,
+
+        "save_dir": "saved/",
+        "save_period": 1,
+        "verbosity": 2,
+
+        "monitor": "min val_loss",
+        "early_stop": 200,
+
+        "tensorboard": true
+    }
+}

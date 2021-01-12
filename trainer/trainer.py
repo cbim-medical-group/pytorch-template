@@ -1,5 +1,8 @@
+import cv2
 import numpy as np
 import torch
+from PIL import Image
+from pytictoc import TicToc
 from torchvision.utils import make_grid
 
 from base import BaseTrainer
@@ -40,14 +43,41 @@ class Trainer(BaseTrainer):
         """
         self.model.train()
         self.train_metrics.reset()
+        t_iter = TicToc()
+        t_epoch = TicToc()
+        t_epoch.tic()
         # for batch_idx, (data, target, misc) in enumerate(self.data_loader):
         for batch_idx, enumerate_result in enumerate(self.data_loader):
-            if type(self.data_loader).__name__ == "GeneralDataLoader":
+            t_iter.tic()
+
+            if type(self.data_loader).__name__ == "GeneralDataLoader" or type(
+                    self.data_loader).__name__ == "FasterGeneralDataLoader":
                 data, target, misc = enumerate_result
             else:
                 data, target = enumerate_result
                 misc = None
+
+            # DEBUG: save some images for validate
+            # for i in range(data.shape[0]):
+            #     img_sample = data[i, 0, :, :, 5]
+            #     img_sample = (img_sample * (255 / img_sample.max()))
+            #     img_sample = img_sample.numpy().astype(np.uint8)
+            #     target_sample = target[i, :, :, 5]
+            #     target_sample = target_sample * 255
+            #
+            #     img_sample = Image.fromarray(img_sample).convert('RGB')
+            #     target_sample = Image.fromarray(target_sample.numpy().astype(np.uint8)).convert('RGB')
+            #
+            #     img_sample.save(f"/research/cbim/vast/qc58/work/projects/pytorch-template/saved/test_results/tmp/{i}-image.jpg")
+            #     target_sample.save(f"/research/cbim/vast/qc58/work/projects/pytorch-template/saved/test_results/tmp/{i}-label.jpg")
+
+                # cv2.imwrite(f"/ajax/users/qc58/work/projects/pytorch-template/saved/test_result/tmp/{i}-image.png",
+                #             img_sample)
+                # cv2.imwrite(f"/ajax/users/qc58/work/projects/pytorch-template/saved/test_result/tmp/{i}-label.png",
+                #             target_sample)
+
             data, target = data.to(self.device), target.to(self.device)
+            # print(f"data: {data.shape}, target:{target.shape}")
 
             self.optimizer.zero_grad()
             output = self.model(data)
@@ -69,15 +99,24 @@ class Trainer(BaseTrainer):
                 self.train_metrics.update(met.__name__, met(output, target, misc))
 
             if batch_idx % self.log_step == 0:
-                self.logger.debug(f'Train Epoch: {epoch} {self._progress(batch_idx)} Loss:{loss.item():.6f}({each_loss})')
+                spam = t_iter.tocvalue(restart=True)
+                self.logger.debug(
+                    f'Train Epoch: {epoch} {self._progress(batch_idx)} Loss:{loss.item():.6f}({each_loss}), elapsed time:{spam:.2f} sec.')
                 vis_data = data
-                # if data.shape[1] != 3 and data.shape[1] != 1:
-                #     vis_data = data[:, 2:3, :, :]
-                # self.writer.add_image('input', make_grid(vis_data.cpu(), nrow=8, normalize=True))
+
+                if data.shape[1] != 3 and data.shape[1] != 1:
+                    vis_data = data[:, 0:1, :, :]
+                if len(data.shape) > 4:
+                    # print(f"The data is not 2D data, sample the 3D dimension")
+                    vis_data = data[:, :1, :, :, 0]
+                self.writer.add_image('input', make_grid(vis_data.cpu(), nrow=8, normalize=True))
 
             if batch_idx == self.len_epoch:
                 break
         log = self.train_metrics.result()
+
+        spam_epoch = t_epoch.tocvalue(restart=True)
+        self.logger.debug(f"Elapsed time of epoch: {spam_epoch:.2f}")
 
         if self.do_validation:
             val_log = self._valid_epoch(epoch)
@@ -99,7 +138,8 @@ class Trainer(BaseTrainer):
         self.valid_metrics.reset()
         with torch.no_grad():
             for batch_idx, enumerate_result in enumerate(self.valid_data_loader):
-                if type(self.data_loader).__name__ == "GeneralDataLoader":
+                if type(self.data_loader).__name__ == "GeneralDataLoader" or type(
+                        self.data_loader).__name__ == "FasterGeneralDataLoader":
                     data, target, misc = enumerate_result
                 else:
                     data, target = enumerate_result
@@ -124,14 +164,17 @@ class Trainer(BaseTrainer):
                         self._progress(batch_idx),
                         loss.item()))
 
-                vis_data=data
-                # if data.shape[1] != 3 and data.shape[1] != 1:
-                #     vis_data = data[:, 2:3, :, :]
-                # self.writer.add_image('input', make_grid(vis_data.cpu(), nrow=8, normalize=True))
+                vis_data = data
+                if data.shape[1] != 3 and data.shape[1] != 1:
+                    vis_data = data[:, 0:1, :, :]
+                if len(data.shape) > 4:
+                    # print(f"The data is not 2D data, sample the 3D dimension")
+                    vis_data = data[:, :1, :, :, 0]
+                self.writer.add_image('input', make_grid(vis_data.cpu(), nrow=8, normalize=True))
 
         # add histogram of model parameters to the tensorboard
-        for name, p in self.model.named_parameters():
-            self.writer.add_histogram(name, p, bins='auto')
+        # for name, p in self.model.named_parameters():
+        #     self.writer.add_histogram(name, p, bins='auto')
         return self.valid_metrics.result()
 
     def _progress(self, batch_idx):

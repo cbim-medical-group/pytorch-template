@@ -1,0 +1,59 @@
+{
+    "name": "Misalignment_Correction",
+    "n_gpu": 1,
+    "model": {
+        "type": "Vgg11Bn",
+        "args": {
+            "num_classes": 20
+        }
+    },
+    "data_loader": {
+        "type": "GeneralDataLoader",
+        "args":{
+            "data_dir": "/share_hd1/db/MRRecon/MMWHS_training.h5",
+            "batch_size": 3,
+            "shuffle": true,
+            "validation_split": 0.2,
+            "num_workers": 0
+        },
+        "transforms": ["FilterLabel","ExpRandomFlip","ExpRandomShiftSxlx","ExpPadding3d","ExpRandomCrop3d","ToTensor","Normalize3d"],
+        "transforms_args": {
+            "FilterLabel": [[2,3],[1,1]],
+            "ExpPadding3d": [[120,120,10]],
+            "ExpRandomCrop3d": [[120,120,10]],
+            "ExpRandomShiftSxlx": [0.8, 20, 10, true],
+            "Normalize3d": [[0,0,0],[100,1,1]],
+            "ToTensor": ["float"]
+        }
+    },
+    "optimizer": {
+        "type": "Adam",
+        "args":{
+            "lr": 0.0001,
+            "weight_decay": 0,
+            "amsgrad": true
+        }
+    },
+    "loss": ["exp_alignment_loss"],
+    "metric": ["exp_alignment"],
+    "lr_scheduler": {
+        "type": "StepLR",
+        "args": {
+            "step_size": 50,
+            "gamma": 0.1
+        }
+    },
+    "trainer": {
+        "type": "TrainerUnsupervised",
+        "epochs": 300,
+
+        "save_dir": "saved/",
+        "save_period": 30,
+        "verbosity": 2,
+
+        "monitor": "min val_loss",
+        "early_stop": 300,
+
+        "tensorboard": true
+    }
+}

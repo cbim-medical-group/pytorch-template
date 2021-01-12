@@ -35,7 +35,7 @@ class GeneralDataLoader(DataLoader):
     """
 
     def __init__(self, data_dir, batch_size, shuffle, validation_split, num_workers, collate_fn=default_collate,
-                 training=True, transforms=None):
+                 training=True, transforms=None, has_label=True):
         """
         :param data_dir: str|array: String should be the source of h5 file for GeneralDataset.
                                     Array should contain 2 string elements, contain the path to the training('train')
@@ -58,8 +58,8 @@ class GeneralDataLoader(DataLoader):
             # Should load two h5 files which is training and validation dataset.
             if isinstance(data_dir, str):
                 data_dir = [data_dir, data_dir]
-            self.train_dataset = GeneralDataset(data_dir[0], transforms=transforms, paths=validation_split[0])
-            self.valid_dataset = GeneralDataset(data_dir[1], transforms=transforms, paths=validation_split[1])
+            self.train_dataset = GeneralDataset(data_dir[0], transforms=transforms, paths=validation_split[0], has_label=has_label)
+            self.valid_dataset = GeneralDataset(data_dir[1], transforms=transforms, paths=validation_split[1], has_label=has_label)
 
             print(f"GeneralDataLoader: training dataset length:{len(self.train_dataset)}, "
                   f"validation dataset length:{len(self.valid_dataset)}")
@@ -78,7 +78,7 @@ class GeneralDataLoader(DataLoader):
         elif isinstance(validation_split, float) or isinstance(validation_split, int):
             # if data_dir is not list but string, also validation_split is float, split the dataset as val.
             assert isinstance(data_dir, str), "if validation_split is float, the data_dir only support string type"
-            dataset = GeneralDataset(data_dir, transforms=transforms, paths=[self.root_path])
+            dataset = GeneralDataset(data_dir, transforms=transforms, paths=[self.root_path], has_label=has_label)
             print(f"GeneralDataLoader: split dataset by percentage:{validation_split * 100}%")
             self.validation_split = validation_split
             self.shuffle = shuffle
@@ -136,7 +136,7 @@ class GeneralDataLoader(DataLoader):
 
 
 class GeneralDataset(data.Dataset):
-    def __init__(self, h5_filepath, transforms=None, paths=["train"]):
+    def __init__(self, h5_filepath, transforms=None, paths=["train"], has_label=True):
         """
 
         :param h5_filepath:string h5 file path to load.
@@ -149,6 +149,9 @@ class GeneralDataset(data.Dataset):
         self.h5_filepath = h5_filepath
         self.transforms = transforms
         self.img_list = self._get_img_list(h5_filepath, paths)
+        self.has_label = has_label
+        if not has_label:
+            print(f"The dataset don't have label, will use zero tensor instead. Please don't use.")
 
     def _get_img_list(self, h5_filepath, paths):
         img_list = []
@@ -163,7 +166,11 @@ class GeneralDataset(data.Dataset):
     def __getitem__(self, index):
         with h5py.File(self.h5_filepath, 'r') as h5_file:
             img_path, label_path = self.img_list[index]
-            img, label = h5_file[img_path][()], h5_file[label_path][()]
+            img = h5_file[img_path][()]
+            if self.has_label:
+                label = h5_file[label_path][()]
+            else:
+                label = np.zeros_like(img)
 
             if self.transforms is not None:
                 img = self.transforms({'image': img, 'mask': label, "misc": {
@@ -175,21 +182,21 @@ class GeneralDataset(data.Dataset):
         return img['image'], img['mask'], img['misc']
 
     def __len__(self):
+        # return 10
         return len(self.img_list)
 
     @staticmethod
     def split_volume(input, output_size, step):
         ext_input_pad = [(0, (math.ceil(i / j) - 1) * j + k - i) for i, j, k in zip(input.shape, step, output_size)]
         ext_input = np.pad(input, ext_input_pad)
-
         split_input = view_as_windows(ext_input, output_size, step)
 
         orig_split_pos = split_input.shape[:len(split_input.shape) // 2]
         ext_shape = ext_input.shape
-        reshape_ooutput_size = list(output_size)
-        reshape_ooutput_size.insert(0, -1)
+        reshape_output_size = list(output_size)
+        reshape_output_size.insert(0, -1)
 
-        split_input = np.reshape(split_input, reshape_ooutput_size)
+        split_input = np.reshape(split_input, reshape_output_size)
 
         return split_input, orig_split_pos, ext_shape
 

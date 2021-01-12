@@ -5,9 +5,9 @@ from model.backbones.vgg2 import VGG
 
 
 class Vgg11Bn(nn.Module):
-    def __init__(self, pretrained=False, progress=True, **kwargs):
+    def __init__(self, pretrained=False, progress=True, num_classes=10, in_channel=3, **kwargs):
         super().__init__()
-        self.model = VGG("VGG11")
+        self.model = VGG("VGG11",num_classes, in_channel)
 
     def forward(self, x):
         return self.model(x)

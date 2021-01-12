@@ -1,0 +1,79 @@
+{
+    "name": "brats_seg_AsynDGANv2_exp45",
+    "n_gpu": 1,
+
+    "model": {
+        "type": "Unet",
+        "args": {
+            "in_channel" : 2,
+            "out_channel": 2
+        }
+    },
+    "data_loader": {
+        "type": "GeneralDataLoader",
+        "args":{
+            "data_dir": ["/research/cbim/vast/qc58/pub-db/BraTS2018/AsynDGANv2/General_format_BraTS18_train_three_center_2d_3ch_new_2.h5",
+                "/research/cbim/vast/qc58/pub-db/BraTS2018/AsynDGANv2/General_format_BraTS18_test_2d_3ch_new.h5"],
+            "batch_size": 40,
+            "shuffle": true,
+            "validation_split": [["train"],["test"]],
+            "num_workers": 0
+        },
+        "transforms": ["SelectChannel","FilterLabel","Resize", "RandomCrop", "RandomFlip","ToTensor","NormalizeInstance"],
+        "transforms_args": {
+            "SelectChannel": [[0,1],[0]],
+            "FilterLabel": [[1,2,3,4,255],[1,1,1,1,1]],
+            "Resize": [286],
+            "RandomCrop": [256],
+            "RandomFlip": [true, true]
+        }
+    },
+    "test_data_loader": {
+        "type": "GeneralTestDataLoader",
+        "args":{
+            "data_dir": "/research/cbim/vast/qc58/pub-db/BraTS2018/AsynDGANv2/General_format_BraTS18_test_2d_3ch_new.h5",
+            "batch_size": 40,
+            "shuffle": true,
+            "validation_split": 0,
+            "num_workers": 0
+        },
+        "transforms": ["SelectChannel","FilterLabel","Resize", "RandomCrop", "RandomFlip","ToTensor","NormalizeInstance"],
+        "transforms_args": {
+            "SelectChannel": [[0,1],[0]],
+            "FilterLabel": [[1,2,3,4,255],[1,1,1,1,1]],
+            "Resize": [286],
+            "RandomCrop": [256],
+            "RandomFlip": [false, false]
+        }
+    },
+    "optimizer": {
+        "type": "Adam",
+        "args":{
+            "lr": 0.01,
+            "weight_decay": 0,
+            "amsgrad": true
+        }
+    },
+    "loss": ["cross_entropy_loss","tversky_loss"],
+    "metric": ["dice"],
+    "lr_scheduler": {
+        "type": "StepLR",
+        "args": {
+            "step_size": 50,
+            "gamma": 0.1
+        }
+    },
+    "trainer": {
+        "type": "Trainer",
+        "epochs": 200,
+
+        "save_dir": "saved/",
+        "save_period": 1,
+        "verbosity": 2,
+        
+        "monitor": "max val_dice",
+        "early_stop": 50,
+
+        "tensorboard": false
+    }
+}

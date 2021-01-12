@@ -25,13 +25,13 @@ class dilated_conv(nn.Module):
 
 
 class ConvDownBlock(nn.Module):
-    def __init__(self, in_channel, out_channel, dropout_rate=0.0, dilation=1, padding=1):
+    def __init__(self, in_channel, out_channel, dropout_rate=0.0, dilation=1, padding=1, kernel_size=(2,2,2)):
         super().__init__()
         self.conv1 = dilated_conv(in_channel, out_channel, dropout_rate=dropout_rate, dilation=dilation,
                                   padding=padding)
         self.conv2 = dilated_conv(out_channel, out_channel, dropout_rate=dropout_rate, dilation=dilation,
                                   padding=padding)
-        self.pool = nn.MaxPool3d(kernel_size=2)
+        self.pool = nn.MaxPool3d(kernel_size=kernel_size)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -40,19 +40,23 @@ class ConvDownBlock(nn.Module):
 
 
 class ConvUpBlock(nn.Module):
-    def __init__(self, in_channel, out_channel, dropout_rate=0.0, dilation=1):
+    def __init__(self, in_channel, out_channel, dropout_rate=0.0, dilation=1, kernel_size=(2,2,2), stride=(2,2,2)):
         super().__init__()
-        self.up = nn.ConvTranspose3d(in_channel, in_channel // 2, 2, stride=2)
+        self.up = nn.ConvTranspose3d(in_channel, in_channel // 2, kernel_size, stride=stride)
         self.conv1 = dilated_conv(in_channel // 2 + out_channel, out_channel, dropout_rate=dropout_rate,
                                   dilation=dilation)
         self.conv2 = dilated_conv(out_channel, out_channel, dropout_rate=dropout_rate, dilation=dilation)
 
     def forward(self, x, x_skip):
+        # print(f"orig:{x.shape},skip:{x_skip.shape}")
         x = self.up(x)
         H_diff = x.shape[2] - x_skip.shape[2]
         W_diff = x.shape[3] - x_skip.shape[3]
         D_diff = x.shape[4] - x_skip.shape[4]
-        x_skip = F.pad(x_skip, (0, W_diff, 0, H_diff, 0, D_diff), mode='replicate')
+        # print(f"up: {x.shape}, skip{x_skip.shape}")
+        x_skip = F.pad(x_skip, (0, D_diff, 0, W_diff, 0, H_diff), mode='replicate')
+        # print(f"pad: {x.shape}, skip{x_skip.shape}")
+        # x = self.up(x, output_size=x_skip.shape)
         x = torch.cat([x, x_skip], 1)
         x = self.conv1(x)
         x = self.conv2(x)
@@ -66,10 +70,10 @@ class Unet3d(nn.Module):
         self.c1 = ConvDownBlock(in_channel, channel_start, padding=padding)
         self.c2 = ConvDownBlock(channel_start, channel_start * 2, padding=padding)
         self.c3 = ConvDownBlock(channel_start * 2, channel_start * 4, padding=padding)
-        self.c4 = ConvDownBlock(channel_start * 4, channel_start * 8, padding=padding)
-        self.cu = ConvDownBlock(channel_start * 8, channel_start * 16, padding=padding)
+        self.c4 = ConvDownBlock(channel_start * 4, channel_start * 8, padding=padding,kernel_size=(2,2,1))
+        self.cu = ConvDownBlock(channel_start * 8, channel_start * 16, padding=padding,kernel_size=(2,2,1))
         # up conv
-        self.u5 = ConvUpBlock(channel_start * 16, channel_start * 8)
+        self.u5 = ConvUpBlock(channel_start * 16, channel_start * 8,kernel_size=(2,2,1), stride=(2,2,1))
         self.u6 = ConvUpBlock(channel_start * 8, channel_start * 4)
         self.u7 = ConvUpBlock(channel_start * 4, channel_start * 2)
         self.u8 = ConvUpBlock(channel_start * 2, channel_start)
@@ -98,3 +102,13 @@ class Unet3d(nn.Module):
         # print(f"x:{x.shape}")
         x = self.ce(x)
         return x
+
+def test():
+    net = Unet3d(in_channel=2, out_channel=2).cuda()
+    x = torch.randn(1,2,200,200,13).cuda()
+
+    y = net(x)
+    print(y.size())
+
+# test()
+

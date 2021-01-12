@@ -12,7 +12,7 @@ class ToTensor:
     def __call__(self, sample):
         image, mask, misc = sample['image'], sample['mask'], sample['misc']
 
-        image = torch.tensor(image).float()
+        image = torch.tensor(image.astype('float')).float()
         if self.mask_type == "long":
             mask = torch.tensor(mask).long()
         elif self.mask_type == "float":

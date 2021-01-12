@@ -1,9 +1,10 @@
+import numpy as np
 import torch
 from numpy.core.umath_tests import inner1d
 from skimage import morphology
-import numpy as np
 
-def hausdorff95(output, target):
+
+def hausdorff95(output, target, misc):
     with torch.no_grad():
         # pred = torch.sigmoid(output) > 0.5
         # pred = output > 0.5
@@ -22,9 +23,10 @@ def hausdorff95(output, target):
                 target_contours = target[k] & (~morphology.binary_erosion(target[k]))
                 pred_ind = np.argwhere(pred_contours)
                 target_ind = np.argwhere(target_contours)
-                hd95 += _haus_dist_95(pred_ind, target_ind)
+                if target_ind.shape[0] > 0 and pred_ind.shape[0] > 0:
+                    hd95 += _haus_dist_95(pred_ind, target_ind)
 
-    return (hd95+0.0001)/(n+0.0001)
+    return (hd95 + 0.0001) / (n + 0.0001)
 
 
 def _haus_dist_95(A, B):

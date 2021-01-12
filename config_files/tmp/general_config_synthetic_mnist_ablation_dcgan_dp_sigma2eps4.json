@@ -1,0 +1,55 @@
+{
+    "name": "ablation_mnist_dcgan_dp_bs256_sigma2_eps4",
+    "n_gpu": 1,
+
+    "model": {
+        "type": "MnistModelV2",
+        "args": {}
+    },
+    "data_loader": {
+        "type": "GeneralDataLoader",
+        "args":{
+            "data_dir": ["/share_hd1/db/MNIST/syn_images/ablation_mnist_dcgan_dp_bs256_sigma2_eps4/test_latest/general_format_mnist_dcgan_cDCGAN_epochlatest_x1.h5",
+                "/share_hd1/db/MNIST/true_images/general_format_test.h5"],
+            "batch_size": 128,
+            "shuffle": true,
+            "validation_split": [["train"],["val"]],
+            "num_workers": 0
+        },
+        "transforms": ["Padding","RandomCrop","RandomFlip","ToTensor","NormalizeInstance"],
+        "transforms_args": {
+            "Padding": [32],
+            "RandomCrop": [28],
+            "RandomFlip": [true, false, true]
+        }
+    },
+    "optimizer": {
+        "type": "Adam",
+        "args":{
+            "lr": 0.001,
+            "weight_decay": 0,
+            "amsgrad": true
+        }
+    },
+    "loss": ["cross_entropy_loss"],
+    "metric": ["accuracy", "top_k_acc"],
+    "lr_scheduler": {
+        "type": "StepLR",
+        "args": {
+            "step_size": 50,
+            "gamma": 0.1
+        }
+    },
+    "trainer": {
+        "epochs": 100,
+
+        "save_dir": "saved/",
+        "save_period": 1,
+        "verbosity": 2,
+
+        "monitor": "min val_loss",
+        "early_stop": 10,
+
+        "tensorboard": true
+    }
+}

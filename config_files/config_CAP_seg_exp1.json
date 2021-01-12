@@ -1,0 +1,74 @@
+{
+    "name": "CAP_LA_segmentation_exp1",
+    "n_gpu": 1,
+
+    "model": {
+        "type": "Unet",
+        "args": {
+            "in_channel" : 1,
+            "out_channel": 2
+        }
+    },
+    "data_loader": {
+        "type": "FasterGeneralDataLoader",
+        "args":{
+            "data_dir": ["/research/cbim/vast/qc58/pub-db/CAP/process/cap_train.h5","/research/cbim/vast/qc58/pub-db/CAP/process/cap_test.h5"],
+            "batch_size": 32,
+            "shuffle": true,
+            "validation_split": [["train"],["val"]],
+            "num_workers": 0
+        },
+        "transforms": ["Unsqueeze","FilterLabel","Resize", "RandomCrop", "RandomFlip","ToTensor","Normalize"],
+        "transforms_args": {
+            "Resize": [340],
+            "FilterLabel": [[255],[1]],
+            "RandomCrop": [320],
+            "RandomFlip": [true, true],
+            "Normalize": [150,183]
+        }
+    },
+    "test_data_loader": {
+        "type": "FasterGeneralDataLoader",
+        "args":{
+            "data_dir": "/research/cbim/vast/qc58/private-db/cardiac/derivate_export_data/DyssynchronyProjectDcmFiltered-LAX-Nov16.h5",
+            "batch_size": 1,
+            "shuffle": false,
+            "validation_split": 0,
+            "num_workers": 0,
+            "has_label": false
+        },
+        "transforms": ["ToTensor","NormalizeInstance"],
+        "transforms_args": {}
+    },
+    "optimizer": {
+        "type": "Adam",
+        "args":{
+            "lr": 0.01,
+            "weight_decay": 0,
+            "amsgrad": true
+        }
+    },
+    "loss": ["cross_entropy_loss","tversky_loss"],
+    "metric": ["accuracy", "dice"],
+    "lr_scheduler": {
+        "type": "StepLR",
+        "args": {
+            "step_size": 50,
+            "gamma": 0.1
+        }
+    },
+    "trainer": {
+        "type": "Trainer",
+        "epochs": 200,
+
+        "save_dir": "saved/",
+        "save_period": 1,
+        "verbosity": 2,
+        
+        "monitor": "max val_dice",
+        "early_stop": 50,
+
+        "tensorboard": true,
+        "vis": false
+    }
+}

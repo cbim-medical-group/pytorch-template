@@ -1,0 +1,75 @@
+{
+    "name": "brats_VAE_exp5_50img_simpler",
+    "n_gpu": 1,
+
+    "model": {
+        "type": "autoencoder/SimplerVae",
+        "args": {
+            "in_channel" : 3,
+            "out_channel": 3,
+            "latent_dim": 128
+        }
+    },
+    "data_loader": {
+        "type": "GeneralDataLoader",
+        "args":{
+            "data_dir": "/share_hd1/db/CelebA/celebA_128_50.h5",
+            "batch_size": 1,
+            "shuffle": true,
+            "validation_split": 0.05,
+            "num_workers": 0
+        },
+        "transforms": ["MoveAxis","ToTensor","NormalizeInstance"],
+        "transforms_args": {
+            "MoveAxis": [-1,0, true],
+            "ToTensor": ["float"],
+            "NormalizeInstance": [true, true]
+        }
+    },
+    "test_data_loader": {
+        "type": "GeneralDataLoader",
+        "args":{
+            "data_dir": "/share_hd1/db/CelebA/celebA_128_50.h5",
+            "batch_size": 1,
+            "shuffle": true,
+            "validation_split": 0.05,
+            "num_workers": 0
+        },
+        "transforms": ["MoveAxis","ToTensor","NormalizeInstance"],
+        "transforms_args": {
+            "MoveAxis": [-1,0, true],
+            "ToTensor": ["float"],
+            "NormalizeInstance": [true, true]
+        }
+    },
+    "optimizer": {
+        "type": "Adam",
+        "args":{
+            "lr": 0.0001,
+            "weight_decay": 0,
+            "amsgrad": true
+        }
+    },
+    "loss": ["vae_loss"],
+    "metric": ["l1"],
+    "lr_scheduler": {
+        "type": "StepLR",
+        "args": {
+            "step_size": 1000,
+            "gamma": 0.1
+        }
+    },
+    "trainer": {
+        "type": "Trainer",
+        "epochs": 3000,
+
+        "save_dir": "saved/",
+        "save_period": 50,
+        "verbosity": 2,
+
+        "monitor": "min l1",
+        "early_stop": 50,
+
+        "tensorboard": true
+    }
+}

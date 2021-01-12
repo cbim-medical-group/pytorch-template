@@ -14,15 +14,19 @@ def one_cls_dice(output, target, label_idx):
     with torch.no_grad():
         pred_bool = (output > 0.5)
         target_bool = (target == 1)
+        batch_size = pred_bool.shape[0]
 
-        intersection = pred_bool * target_bool
-        return (2 * int(intersection.sum())) / (int(pred_bool.sum()) + int(target_bool.sum()) + eps)
+        pred_bool_flat = pred_bool.view(batch_size,-1)
+        target_bool_flat = target_bool.view(batch_size, -1)
+
+        intersection = pred_bool_flat * target_bool_flat
+        return ((2 * intersection.sum(1)) / (pred_bool_flat.sum(1) + target_bool_flat.sum(1) + eps)).mean()
 
 
 def dice_binary(output, target, misc=None):
     """
     Calculate dice for all channels.
-    :param output:Output dimension: Batch x Channel x X x Y (x Z) float
+    :param output:Output dimension: Batch x X x Y (x Z) float
     :param target:Target dimension: Batch x X x Y (x Z) int:[0, Channel]
     :return:
     """
@@ -31,6 +35,6 @@ def dice_binary(output, target, misc=None):
     dices = []
     # for i in range(1, channel_num):
     dice = one_cls_dice(output, target, label_idx=1)
-    dices.append(dice)
+    dices.append(float(dice))
 
     return np.average(np.array(dices))

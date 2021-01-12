@@ -1,0 +1,58 @@
+{
+    "name": "brats_seg_eccv_exp11.2_mar3",
+    "n_gpu": 1,
+
+    "model": {
+        "type": "Unet",
+        "args": {
+            "in_channel" : 3,
+            "out_channel": 2
+        }
+    },
+    "data_loader": {
+        "type": "GeneralDataLoader",
+        "args":{
+            "data_dir": ["/share_hd1/db/Nuclei/lifelong/syn_images_v3/Brain_local/general_Brain_local_noDropout_epoch80_brats.h5",
+                "/share_hd1/db/Brain/real_images/general_test_brats.h5"],
+            "batch_size": 20,
+            "shuffle": true,
+            "validation_split": [["train"],["val"]],
+            "num_workers": 0
+        },
+        "transforms": ["Homochrome","Padding", "RandomCrop","ToTensor","NormalizeInstance"],
+        "transforms_args": {
+            "Padding": [286],
+            "Homochrome": [-1],
+            "RandomCrop": [256]
+        }
+    },
+    "optimizer": {
+        "type": "Adam",
+        "args":{
+            "lr": 0.001,
+            "weight_decay": 0,
+            "amsgrad": true
+        }
+    },
+    "loss": ["cross_entropy_loss","tversky_loss"],
+    "metric": ["accuracy", "dice", "hausdorff95"],
+    "lr_scheduler": {
+        "type": "StepLR",
+        "args": {
+            "step_size": 50,
+            "gamma": 0.1
+        }
+    },
+    "trainer": {
+        "epochs": 200,
+
+        "save_dir": "saved/",
+        "save_period": 1,
+        "verbosity": 2,
+        
+        "monitor": "min val_dice",
+        "early_stop": 10,
+
+        "tensorboard": true
+    }
+}

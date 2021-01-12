@@ -105,6 +105,7 @@ class NiftiParser:
                     orig_x_spacing / resample[0], orig_y_spacing / resample[1], orig_z_spacing / resample[2]), order=0)
                     pixdim = [0,resample[0],resample[1], resample[2]]
 
+                print(f"save dataset:{d_type}/{file_name}")
                 ds = current_file.create_dataset(f"{d_type}/{file_name}", data=array_file)
 
 
@@ -123,8 +124,8 @@ class NiftiParser:
 
 if __name__ == "__main__":
     # ACDC Parser
-    parser = NiftiParser("/Users/qichang/Downloads/training", "/Users/qichang/PycharmProjects/medical_dataset/ACDC_new",
-                         "ACDC_train", "ACDC_test", split_ratio=0.2)
+    # parser = NiftiParser("/Users/qichang/Downloads/training", "/Users/qichang/PycharmProjects/medical_dataset/ACDC_new",
+    #                      "ACDC_train", "ACDC_test", split_ratio=0.2)
 
     # parser = NiftiParser("/Users/qichang/PycharmProjects/medical_dataset/MMWHS/",
     #                      "/Users/qichang/PycharmProjects/medical_dataset/MMWHS/processed",
@@ -139,6 +140,16 @@ if __name__ == "__main__":
     # parser = NiftiParser("/share_hd1/db/ISLES/TRAINING",
     #                      "/share_hd1/db/ISLES/processed",
     #                      "ISLES_train", "ISLES_test", split_ratio=0.2, name_handler="ISLES_2018_name_handler")
+
+    # parser = NiftiParser("/freespace/local/qc58/dataset/BraTS2018/tmp/3modality_1",
+    #                      "/freespace/local/qc58/dataset/BraTS2018/processed",
+    #                      "BraTS18_train_three_modality_1", "BraTS18_test_three_modality_1", split_ratio=0, name_handler="brats18_name_handler")
+    # parser = NiftiParser("/freespace/local/qc58/dataset/BraTS2018/tmp/3modality_2",
+    #                      "/freespace/local/qc58/dataset/BraTS2018/processed",
+    #                      "BraTS18_train_three_modality_2", "BraTS18_test_three_modality_2", split_ratio=0, name_handler="brats18_name_handler")
+    parser = NiftiParser("/freespace/local/qc58/dataset/BraTS2018/tmp/3modality_3",
+                         "/freespace/local/qc58/dataset/BraTS2018/processed",
+                         "BraTS18_train_three_modality_3", "BraTS18_test_three_modality_3", split_ratio=0, name_handler="brats18_name_handler")
 
 
     all_nifti_files, folder_number = parser.read_all_nifti_files()

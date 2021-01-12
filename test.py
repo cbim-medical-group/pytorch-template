@@ -6,6 +6,11 @@ import data_loader.data_loaders as module_data
 
 from parse_config import ConfigParser
 
+SEED = 123
+torch.manual_seed(SEED)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+np.random.seed(SEED)
 
 def main(config):
     logger = config.get_logger('test')
